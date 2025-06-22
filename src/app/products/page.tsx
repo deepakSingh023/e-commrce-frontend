@@ -147,7 +147,7 @@ export default function ProductsPage() {
               <Checkbox
                 id={range.label}
                 checked={selectedPriceRanges.includes(range.label)}
-                onCheckedChange={(checked) => {
+                onCheckedChange={(checked: boolean | "indeterminate") => {
                   if (checked) {
                     setSelectedPriceRanges([...selectedPriceRanges, range.label])
                   } else {
