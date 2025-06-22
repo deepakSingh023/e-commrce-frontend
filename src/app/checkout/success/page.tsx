@@ -14,7 +14,6 @@ export default function CheckoutSuccessPage() {
 
   return (
     <div className="min-h-screen">
-      <Header/>
 
       <main className="container mx-auto px-4 py-16">
         <div className="max-w-2xl mx-auto text-center space-y-8">
