@@ -1,69 +1,66 @@
-"use client"
+"use client";
 
-import type React from "react"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, AppDispatch } from "@/store/store";
+import { adminLogin } from "@/store/slices/adminAuthSlice";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Eye, EyeOff, Shield, ArrowLeft } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff, Shield, ArrowLeft } from "lucide-react";
 
 export default function AdminLoginPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    email: "",
+    username: "",
     password: "",
     rememberMe: false,
-  })
-  const { toast } = useToast()
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+  const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
 
-    // Simulate login process
-    setTimeout(() => {
-      setIsLoading(false)
-      toast({
-        title: "Login Successful",
-        description: "Welcome to the admin dashboard!",
-      })
-    }, 2000)
-  }
+  const { admin, loading, error } = useSelector((state: RootState) => state.adminAuth);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    dispatch(adminLogin(formData));
+  };
+
+  useEffect(() => {
+    if (admin) {
+      router.push("/admin/dashboard");
+    }
+  }, [admin]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
-    }))
-  }
+    }));
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-purple-950/20 dark:via-pink-950/20 dark:to-orange-950/20 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
-        {/* Back to Home */}
-        <Link
-          href="/"
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
-        >
+        <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Home
         </Link>
 
-        {/* Logo */}
         <div className="text-center">
           <Link href="/" className="inline-flex items-center space-x-2">
             <div className="h-10 w-10 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
               <span className="text-white font-bold">SV</span>
             </div>
             <span className="font-bold text-2xl bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Ecommerece
+              Ecommerce
             </span>
           </Link>
         </div>
@@ -80,13 +77,13 @@ export default function AdminLoginPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="username">Username</Label>
                 <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="admin@ecommerce.com"
-                  value={formData.email}
+                  id="username"
+                  name="username"
+                  type="text"
+                  placeholder="admin"
+                  value={formData.username}
                   onChange={handleInputChange}
                   required
                   className="h-11"
@@ -124,7 +121,9 @@ export default function AdminLoginPage() {
                     id="rememberMe"
                     name="rememberMe"
                     checked={formData.rememberMe}
-                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, rememberMe: checked as boolean }))}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, rememberMe: checked as boolean }))
+                    }
                   />
                   <Label htmlFor="rememberMe" className="text-sm">
                     Remember me
@@ -135,18 +134,20 @@ export default function AdminLoginPage() {
                 </Link>
               </div>
 
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+
               <Button
                 type="submit"
                 className="w-full h-11 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                disabled={isLoading}
+                disabled={loading}
               >
-                {isLoading ? "Signing in..." : "Sign In"}
+                {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
               <p>Demo Credentials:</p>
-              <p>Email: admin@ecommerece.com</p>
+              <p>Username: admin</p>
               <p>Password: admin123</p>
             </div>
           </CardContent>
@@ -162,5 +163,5 @@ export default function AdminLoginPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
