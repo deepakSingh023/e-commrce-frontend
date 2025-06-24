@@ -1,16 +1,16 @@
 import axios from 'axios';
-import { Product } from '../types/product';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://your-api.com';
+const API = axios.create({
+  baseURL: 'http://localhost:5000/api'
+});
 
-// Fetch all products
-export const fetchAllProducts = async (): Promise<Product[]> => {
-  const response = await axios.get(`${BASE_URL}/products`);
-  return response.data;
-};
+// Automatically attach token
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token'); // or sessionStorage or context
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-// Fetch one product by ID
-export const fetchProductById = async (id: string): Promise<Product> => {
-  const response = await axios.get(`${BASE_URL}/products/${id}`);
-  return response.data;
-};
+export default API;
