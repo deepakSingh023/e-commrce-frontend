@@ -1,3 +1,5 @@
+"use client"
+
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import adminAuthSlice from './slices/adminAuthSlice';
 import authReducer from './slices/authSlice';

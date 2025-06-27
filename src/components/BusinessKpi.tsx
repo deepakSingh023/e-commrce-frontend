@@ -9,70 +9,66 @@ import {
 
 export default function BusinessKpi() {
   return (
-    <div className="grid gap-4 mt-6 md:grid-cols-5"> 
-        <Card className="ml-4">
-            <CardHeader>
-                <CardTitle>Total Users</CardTitle>
-                <CardDescription>Active this month</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-3xl font-bold">1,234</p>
-            </CardContent>
-            <CardFooter>
-                <p className="text-sm text-muted-foreground">+12% from last month</p>
-            </CardFooter>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle>Total Users</CardTitle>
-                <CardDescription>Active this month</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-3xl font-bold">1,234</p>
-            </CardContent>
-            <CardFooter>
-                <p className="text-sm text-muted-foreground">+12% from last month</p>
-            </CardFooter>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle>Total Users</CardTitle>
-                <CardDescription>Active this month</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-3xl font-bold">1,234</p>
-            </CardContent>
-            <CardFooter>
-                <p className="text-sm text-muted-foreground">+12% from last month</p>
-            </CardFooter>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle>Total Users</CardTitle>
-                <CardDescription>Active this month</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-3xl font-bold">1,234</p>
-            </CardContent>
-            <CardFooter>
-                <p className="text-sm text-muted-foreground">+12% from last month</p>
-            </CardFooter>
-        </Card>
-        <Card className="mr-4">
-            <CardHeader>
-                <CardTitle>Total Users</CardTitle>
-                <CardDescription>Active this month</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-3xl font-bold">1,234</p>
-            </CardContent>
-            <CardFooter>
-                 <p className="text-sm text-muted-foreground">+12% from last month</p>
-            </CardFooter>
-        </Card>
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 px-4 mt-6">
+      <Card className="w-full h-[120px] flex flex-col justify-between">
+        <CardHeader>
+          <CardTitle>Orders</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-3xl font-bold">12</p>
+        </CardContent>
+        <CardFooter>
+          <p className="text-sm text-muted-foreground">+12% from last month</p>
+        </CardFooter>
+      </Card>
+
+      <Card className="w-full h-[120px] flex flex-col justify-between">
+        <CardHeader>
+          <CardTitle>Revenue</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-3xl font-bold">1,234</p>
+        </CardContent>
+        <CardFooter>
+          <p className="text-sm text-muted-foreground">+12% from last month</p>
+        </CardFooter>
+      </Card>
+
+      <Card className="w-full h-[120px] flex flex-col justify-between">
+        <CardHeader>
+          <CardTitle>Customers</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-3xl font-bold">1,234</p>
+        </CardContent>
+        <CardFooter>
+          <p className="text-sm text-muted-foreground">+12% from last month</p>
+        </CardFooter>
+      </Card>
+
+      <Card className="w-full h-[120px] flex flex-col justify-between">
+        <CardHeader>
+          <CardTitle>Products</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-3xl font-bold">1,234</p>
+        </CardContent>
+        <CardFooter>
+          <p className="text-sm text-muted-foreground">+12% from last month</p>
+        </CardFooter>
+      </Card>
+
+      <Card className="w-full h-[120px] flex flex-col justify-between">
+        <CardHeader>
+          <CardTitle>Messages</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-3xl font-bold">1,234</p>
+        </CardContent>
+        <CardFooter>
+          <p className="text-sm text-muted-foreground">+12% from last month</p>
+        </CardFooter>
+      </Card>
     </div>
-  )
+  );
 }
- 
-
-
