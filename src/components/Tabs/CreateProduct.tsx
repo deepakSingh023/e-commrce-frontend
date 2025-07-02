@@ -10,6 +10,8 @@ interface Props {
   setShowCreateForm: React.Dispatch<React.SetStateAction<boolean>>
 }
 
+
+
 export default function CreateProduct({ fetchProducts, setShowCreateForm }: Props) {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")

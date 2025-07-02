@@ -7,8 +7,10 @@ import { Edit, Trash2, Package, Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import API from "@/lib/api"
 import CreateProduct from "./CreateProduct"
+import EditProduct from "./EditProduct"
 
-interface Product {
+
+export interface Product {
   _id: string
   name: string
   price: number
@@ -18,7 +20,7 @@ interface Product {
   stock: number
   inStock: boolean
   featuredAt: boolean
-  images: string[]
+  images: { url: string, publicId: string }[]
   features: string[]
 }
 
@@ -26,10 +28,18 @@ export default function Products() {
   const { toast } = useToast()
   const [products, setProducts] = useState<Product[]>([])
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showEditForm, setShowEditForm] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
   useEffect(() => {
     fetchProducts()
   }, [])
+
+
+  useEffect(() => {
+  document.body.style.overflow = showCreateForm || showEditForm ? "hidden" : "auto"
+  }, [showCreateForm, showEditForm])
+
 
   const fetchProducts = async () => {
     try {
@@ -64,6 +74,11 @@ export default function Products() {
     }
   }
 
+  const handleEditProduct = (product: Product) => {
+    setSelectedProduct(product)
+    setShowEditForm(true)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
@@ -82,13 +97,19 @@ export default function Products() {
           </div>
 
           {showCreateForm && (
-            <div className="p-6 border-b">
-              <CreateProduct
-                fetchProducts={fetchProducts}
-                setShowCreateForm={setShowCreateForm}
-              />
-            </div>
+             <div className="fixed inset-0  bg-opacity-40 backdrop-blur-sm flex justify-center items-center z-50">
+               <div className="bg-white w-[95%] max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-xl relative shadow-xl">
+                  <button onClick={() => setShowCreateForm(false)} className="absolute top-2 right-2 text-gray-600 hover:text-red-600 text-lg">
+                    ✕
+                  </button>
+                  <CreateProduct
+                  fetchProducts={fetchProducts}
+                  setShowCreateForm={setShowCreateForm}
+                  />
+               </div>
+              </div>
           )}
+
 
           <div className="p-6">
             <h2 className="text-lg font-semibold mb-4">All Products ({products.length})</h2>
@@ -134,11 +155,12 @@ export default function Products() {
                             {product.images.slice(0, 3).map((image, index) => (
                               <img
                                 key={index}
-                                src={image}
+                                src={typeof image === "string" ? image : image.url}
                                 alt={`${product.name} ${index + 1}`}
                                 className="w-12 h-12 object-cover rounded border"
                               />
-                            ))}
+                           ))}
+
                             {product.images.length > 3 && (
                               <div className="w-12 h-12 bg-gray-100 rounded border flex items-center justify-center text-xs">
                                 +{product.images.length - 3}
@@ -149,9 +171,26 @@ export default function Products() {
                       </div>
 
                       <div className="flex gap-2 ml-4">
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => handleEditProduct(product)}>
                           <Edit className="w-4 h-4" />
+                          
                         </Button>
+                        {showEditForm && selectedProduct?._id === product._id && (
+                          <div className="fixed inset-0 bg-white/30 backdrop-blur-sm flex justify-center items-center z-50">
+                            <div className="bg-white w-[95%] max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-xl relative shadow-xl">
+                              <button onClick={() => setShowEditForm(false)} className="absolute top-2 right-2 text-gray-600 hover:text-red-600 text-lg">
+                                ✕
+                              </button>
+                              <EditProduct      
+                                setShowEditForm={setShowEditForm}
+                                product={selectedProduct}
+                              />
+                            </div>
+                          </div>
+                        )
+
+                        }
+
                         <Button
                           size="sm"
                           variant="destructive"
