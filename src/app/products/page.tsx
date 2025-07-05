@@ -1,7 +1,6 @@
 "use client"
 
-import { useState } from "react"
-import Header from "@/components/Header"
+import { useState, useEffect } from "react"
 import Footer from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,71 +11,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Star, Heart, ShoppingCart, Filter, Grid, List } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Link from "next/link"
-
-const products = [
-  {
-    id: 1,
-    name: "Wireless Headphones Pro",
-    price: 299.99,
-    originalPrice: 399.99,
-    rating: 4.8,
-    reviews: 124,
-    image: "/ep1.jpg?height=300&width=300",
-    category: "Electronics",
-    badge: "Best Seller",
-  },
-  {
-    id: 2,
-    name: "Smart Watch Series X",
-    price: 199.99,
-    originalPrice: 249.99,
-    rating: 4.9,
-    reviews: 89,
-    image: "/ep1.jpg?height=300&width=300",
-    category: "Electronics",
-    badge: "New",
-  },
-  {
-    id: 3,
-    name: "Premium Laptop Bag",
-    price: 79.99,
-    originalPrice: 99.99,
-    rating: 4.7,
-    reviews: 156,
-    image: "/ep1.jpg?height=300&width=300",
-    category: "Accessories",
-    badge: "Sale",
-  },
-  {
-    id: 4,
-    name: "Gaming Mechanical Keyboard",
-    price: 149.99,
-    originalPrice: 199.99,
-    rating: 4.6,
-    reviews: 203,
-    image: "/ep1.jpg?height=300&width=300",
-    category: "Electronics",
-    badge: "Hot",
-  },
-  {
-    id: 5,
-    name: "Bluetooth Speaker",
-    price: 89.99,
-    rating: 4.5,
-    reviews: 78,
-    image: "/ep1.jpg?height=300&width=300",
-    category: "Audio",
-  },
-  {
-    id: 6,
-    name: "Fitness Tracker",
-    price: 129.99,
-    rating: 4.4,
-    reviews: 92,
-    image: "/ep1.jpg?height=300&width=300",
-    category: "Electronics",
-  },
-]
+import  {Product} from "@/components/Tabs/Products"
+import API from "@/lib/api"
+import { useAppSelector } from "@/store/hooks"
 
 const categories = ["All", "Electronics", "Fashion", "Home", "Audio", "Accessories"]
 const priceRanges = [
@@ -92,34 +29,100 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [products, setProducts] = useState<Product[]>([])
+  const [sortedProducts, setSortedProducts] = useState<Product[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [favouriteProduct, setFavouriteProduct] = useState<string[]>([])
+  const user = useAppSelector((state: any) => state.user);
+  const [addCart, useAddCart]= useState<string>()
 
-  const filteredProducts = products.filter((product) => {
-    const matchesCategory = selectedCategory === "All" || product.category === selectedCategory
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesPrice =
-      selectedPriceRanges.length === 0 ||
-      selectedPriceRanges.some((range) => {
-        const priceRange = priceRanges.find((r) => r.label === range)
-        return priceRange && product.price >= priceRange.min && product.price <= priceRange.max
-      })
 
-    return matchesCategory && matchesSearch && matchesPrice
-  })
+  useEffect(() => {
+    fetchProducts()
+  }, [searchQuery, selectedCategory, selectedPriceRanges, sortBy, currentPage])
 
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    switch (sortBy) {
-      case "price-low":
-        return a.price - b.price
-      case "price-high":
-        return b.price - a.price
-      case "rating":
-        return b.rating - a.rating
-      case "newest":
-        return b.id - a.id
-      default:
-        return 0
+
+
+  const fetchFavourites = async () => {
+  try {
+    const response = await API.get("/fav/getAllFavourite");
+    console.log(localStorage.getItem("user.token"))
+
+    console.log("💾 Raw favourites data:", response.data);
+
+    // Check if product field is populated
+    const favProductIds = response.data.map((fav: any) =>
+      typeof fav.product === "string" ? fav.product : fav.product._id
+    );
+
+    setFavouriteProduct(favProductIds); // ✅ Now correctly stores product IDs
+  } catch (error) {
+    console.error("❌ Failed to load favourites", error);
+  }
+};
+
+
+  useEffect(() => {
+  fetchFavourites();
+}, []);
+
+
+const toggleFavourite = async (productId: string): Promise<void> => {
+  try {
+    if (favouriteProduct.includes(productId)) {
+      await API.delete("/fav/removeFavorite", {
+        data: { productId },
+      });
+      setFavouriteProduct((prev) => prev.filter((id) => id !== productId));
+    } else {
+      await API.post("/fav/createFavorite", { productId });
+      setFavouriteProduct((prev) => [...prev, productId]);
     }
-  })
+  } catch (err) {
+    console.error("Toggle favourite failed:", err);
+  }
+};
+
+
+
+
+  const fetchProducts = async (page = 1, limit = 9) => {
+  try {
+    const query: Record<string, any> = {
+      page,
+      limit,
+    };
+
+    if (searchQuery.trim()) query.search = searchQuery.trim();
+    if (selectedCategory !== "All") query.category = selectedCategory;
+    if (selectedPriceRanges.length > 0) query.priceRanges = selectedPriceRanges.join(",");
+    if (sortBy !== "featured") query.sortBy = sortBy;
+
+    const response = await API.get("/products/getProductsPage", { params: query });
+
+    setProducts(response.data.products || []);
+    setSortedProducts(response.data.products || []);
+    setTotalPages(response.data.totalPages || 1); // backend should return total pages
+    setCurrentPage(page);
+  } catch (error) {
+    console.error("Failed to fetch products:", error);
+  }
+};
+
+
+const addToCart= async()=>{
+  try{
+    const res = await API.post("/cart/addToCart",)
+
+
+
+
+  }catch(error){
+    console.log(error)
+
+  }
+}
 
   const FilterSidebar = () => (
     <div className="space-y-6">
@@ -191,7 +194,6 @@ export default function ProductsPage() {
                   <SelectItem value="newest">Newest</SelectItem>
                   <SelectItem value="price-low">Price: Low to High</SelectItem>
                   <SelectItem value="price-high">Price: High to Low</SelectItem>
-                  <SelectItem value="rating">Highest Rated</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -249,33 +251,41 @@ export default function ProductsPage() {
             {viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {sortedProducts.map((product) => (
-                  <Link key={product.id} href={`/products/${product.id}`}>
+                  <Link key={product._id} href={`/products/${product._id}`}>
                     <Card className="group hover:shadow-xl transition-all duration-300 cursor-pointer">
                       <CardContent className="p-0">
                         <div className="relative overflow-hidden rounded-t-lg">
                           <img
-                            src={product.image || "/placeholder.svg"}
+                            src={product.images[0]?.url || "/placeholder.svg"}
                             alt={product.name}
                             className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
                           />
-                          {product.badge && (
+                          {product.featuredAt && (
                             <Badge className="absolute top-3 left-3" variant="secondary">
-                              {product.badge}
+                              featured
                             </Badge>
                           )}
                           <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
-                              size="icon"
-                              variant="secondary"
-                              className="h-8 w-8"
-                              onClick={(e) => {
-                                e.preventDefault()
-                                e.stopPropagation()
-                                // Handle wishlist toggle
-                              }}
-                            >
-                              <Heart className="h-4 w-4" />
+                             size="icon"
+                             variant="secondary"
+                             className={`h-8 w-8 ${
+                               favouriteProduct.includes(product._id)
+                                 ? "text-red-500"
+                                 : "text-gray-400"
+                             }`}
+                             onClick={(e) => {
+                               e.preventDefault();
+                               e.stopPropagation();
+                               toggleFavourite(product._id);
+                             }}
+                             >
+                             <Heart
+                               className="h-4 w-4"
+                               fill={favouriteProduct.includes(product._id) ? "currentColor" : "none"}
+                             />
                             </Button>
+
                           </div>
                         </div>
 
@@ -284,19 +294,14 @@ export default function ProductsPage() {
 
                           <div className="flex items-center space-x-2">
                             <div className="flex items-center">
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                              <span className="text-sm font-medium ml-1">{product.rating}</span>
+                              
                             </div>
-                            <span className="text-sm text-muted-foreground">({product.reviews})</span>
+                            <span className="text-sm text-muted-foreground">
+                              <Star className="flex "></Star>({product.reviews})</span>
                           </div>
 
                           <div className="flex items-center space-x-2">
                             <span className="text-xl font-bold">${product.price}</span>
-                            {product.originalPrice && (
-                              <span className="text-sm text-muted-foreground line-through">
-                                ${product.originalPrice}
-                              </span>
-                            )}
                           </div>
 
                           <Button
@@ -320,19 +325,19 @@ export default function ProductsPage() {
             ) : (
               <div className="space-y-4">
                 {sortedProducts.map((product) => (
-                  <Link key={product.id} href={`/products/${product.id}`}>
+                  <Link key={product._id} href={`/products/${product._id}`}>
                     <Card className="group hover:shadow-lg transition-shadow cursor-pointer">
                       <CardContent className="p-6">
                         <div className="flex gap-6">
                           <div className="relative w-32 h-32 shrink-0">
                             <img
-                              src={product.image || "/placeholder.svg"}
+                              src={product.images[0]?.url || "/placeholder.svg"}
                               alt={product.name}
                               className="w-full h-full object-cover rounded-lg"
                             />
-                            {product.badge && (
+                            {product.featuredAt && (
                               <Badge className="absolute top-2 left-2" variant="secondary">
-                                {product.badge}
+                                featured
                               </Badge>
                             )}
                           </div>
@@ -340,35 +345,33 @@ export default function ProductsPage() {
                           <div className="flex-1 space-y-3">
                             <div className="flex justify-between items-start">
                               <h3 className="font-semibold text-xl">{product.name}</h3>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={(e) => {
-                                  e.preventDefault()
-                                  e.stopPropagation()
-                                  // Handle wishlist toggle
-                                }}
-                              >
-                                <Heart className="h-5 w-5" />
-                              </Button>
+                               <Button
+                             size="icon"
+                             variant="secondary"
+                             className={`h-8 w-8 ${
+                               favouriteProduct.includes(product._id)
+                                 ? "text-red-500"
+                                 : "text-gray-400"
+                             }`}
+                             onClick={(e) => {
+                               e.preventDefault();
+                               e.stopPropagation();
+                               toggleFavourite(product._id);
+                             }}
+                             >
+                             <Heart
+                               className="h-4 w-4"
+                               fill={favouriteProduct.includes(product._id.toString()) ? "currentColor" : "none"}
+                             />
+                            </Button>
                             </div>
 
-                            <div className="flex items-center space-x-2">
-                              <div className="flex items-center">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                <span className="text-sm font-medium ml-1">{product.rating}</span>
-                              </div>
-                              <span className="text-sm text-muted-foreground">({product.reviews} reviews)</span>
-                            </div>
+                            
 
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-2">
                                 <span className="text-2xl font-bold">${product.price}</span>
-                                {product.originalPrice && (
-                                  <span className="text-lg text-muted-foreground line-through">
-                                    ${product.originalPrice}
-                                  </span>
-                                )}
+                                
                               </div>
 
                               <Button
@@ -408,6 +411,29 @@ export default function ProductsPage() {
             )}
           </div>
         </div>
+
+        <div className="flex justify-center items-center mt-8 space-x-4">
+  <Button
+    variant="outline"
+    disabled={currentPage === 1}
+    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+  >
+    Previous
+  </Button>
+
+  <span className="text-sm text-muted-foreground">
+    Page {currentPage} of {totalPages}
+  </span>
+
+  <Button
+    variant="outline"
+    disabled={currentPage === totalPages}
+    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+  >
+    Next
+  </Button>
+</div>
+
       </main>
 
       <Footer />

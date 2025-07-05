@@ -1,19 +1,31 @@
-import axios from 'axios';
+"use client";
+
+
+import axios from "axios";
 
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api'
+  baseURL: "http://localhost:5000/api", // your backend URL
 });
 
-// Automatically attach token
-API.interceptors.request.use((config) => {
- const adminRaw = localStorage.getItem("admin");
- const adminData = adminRaw ? JSON.parse(adminRaw) : null;
- const token = adminData?.token;
-console.log("TOKEN SENT:", token); 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// This sets the token from localStorage/sessionStorage before every request
+API.interceptors.request.use(
+  (config) => {
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("user");
+
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        const token = parsedUser?.token;
+
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 
 export default API;

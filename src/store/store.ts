@@ -1,21 +1,19 @@
 "use client"
-
-import { configureStore, combineReducers } from '@reduxjs/toolkit';
-import adminAuthSlice from './slices/adminAuthSlice';
-import authReducer from './slices/authSlice';
-
-import storage from 'redux-persist/lib/storage';
-import { persistReducer, persistStore } from 'redux-persist';
+import { configureStore } from "@reduxjs/toolkit";
+import { persistReducer, persistStore } from "redux-persist";
+import storage from "redux-persist/lib/storage";
+import { combineReducers } from "redux";
+import authSlice from "@/store/slices/authSlice";
+import adminAuthSlice from "@/store/slices/adminAuthSlice";
 
 const persistConfig = {
-  key: 'root',
+  key: "root",
   storage,
-  whitelist: ['auth'],
 };
 
 const rootReducer = combineReducers({
-  auth: authReducer,
-  adminAuth: adminAuthSlice,
+  auth:authSlice,
+  adminAuth:adminAuthSlice
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -24,11 +22,10 @@ export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // required for redux-persist
+      serializableCheck: false,
     }),
 });
 
 export const persistor = persistStore(store);
-
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

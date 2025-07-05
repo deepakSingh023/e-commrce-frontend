@@ -22,6 +22,7 @@ export interface Product {
   featuredAt: boolean
   images: { url: string, publicId: string }[]
   features: string[]
+  reviews:[]
 }
 
 export default function Products() {

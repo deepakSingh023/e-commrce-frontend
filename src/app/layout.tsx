@@ -1,8 +1,10 @@
+
+
 import type { Metadata } from "next";
 import "./globals.css";
 import Headers from "@/components/Header";
 import { Toaster } from "react-hot-toast";
-import {Providers} from "@/Providers"
+import ReduxProvider from "@/Providers"; 
 
 
 export const metadata: Metadata = {
@@ -11,20 +13,19 @@ export const metadata: Metadata = {
 
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
-      
-       <Providers>
+       
+        <ReduxProvider>
+          
           <Headers/>
+          <Toaster/>
+          
           {children}
-          <Toaster position="top-center" />
-        </Providers>
+          
+        </ReduxProvider>
       </body>
     </html>
   );
