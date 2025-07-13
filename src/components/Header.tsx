@@ -82,7 +82,10 @@ export default function Header() {
 
             {/* Icons */}
             <div className="hidden md:flex items-center space-x-2 mr-4">
-              <Button variant="ghost" size="icon"><Heart className="h-5 w-5" /></Button>
+              <Link href="/favourites">
+              <Button variant="ghost" size="icon"><Heart className="h-5 w-5" /></Button> 
+              </Link>
+              
               <Link href="/cart">
                 <Button variant="ghost" size="icon" className="relative">
                   <ShoppingCart className="h-5 w-5" />

@@ -1,13 +1,11 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import API from '@/lib/api'; // ✅ your custom axios instance
+import  {Product} from "@/components/Tabs/Products"
+
+
 
 interface CartItem {
-  product: {
-    _id: string;
-    name?: string;
-    price?: number;
-    image?: string;
-  };
+  product: Product; // Assuming Product is defined in your components
   quantity: number;
 }
 
@@ -26,25 +24,26 @@ const initialState: CartState = {
 
 // ✅ 1. Fetch cart from backend
 export const fetchCart = createAsyncThunk('cart/fetchCart', async () => {
-  const res = await API.get('cart/getCartItems');
-  return res.data.items;
+  const res = await API.get('/cart/getCartItems');
+  return res.data.cart;
 });
 
 // ✅ 2. Add to cart (calls /add)
 export const addToCart = createAsyncThunk(
   'cart/addToCart',
-  async (productId: string) => {
-    const res = await API.post(`cart/addItemCart`, { productId });
-    return res.data.items;
+  async ({ productId, quantity }: { productId: string; quantity: number }) => {
+    const res = await API.post(`/cart/addItemCart`, { productId, quantity });
+    return res.data.cart;
   }
 );
 
+
 // ✅ 3. Decrease quantity
-export const decreaseQuantity = createAsyncThunk(
-  'cart/decreaseQuantity',
-  async (productId: string) => {
-    const res = await API.post(`${API_URL}/decrease`, { productId });
-    return res.data.items;
+export const updateQuantity = createAsyncThunk(
+  'cart/updateQuantity',
+  async ({ productId, quantity }: { productId: string; quantity: number }) => {
+    const res = await API.post(`/cart/updateQuantity`, { productId , quantity});
+    return res.data.cart;
   }
 );
 
@@ -52,16 +51,11 @@ export const decreaseQuantity = createAsyncThunk(
 export const removeFromCart = createAsyncThunk(
   'cart/removeFromCart',
   async (productId: string) => {
-    const res = await API.delete(`${API_URL}/remove/${productId}`);
-    return res.data.items;
+    const res = await API.delete(`/cart/removeItemCart/${productId}`);
+    return res.data.cart;
   }
 );
 
-// ✅ 5. Clear entire cart
-export const clearCart = createAsyncThunk('cart/clearCart', async () => {
-  await API.delete(`${API_URL}/clear`);
-  return [];
-});
 
 const cartSlice = createSlice({
   name: 'cart',
@@ -83,15 +77,12 @@ const cartSlice = createSlice({
       .addCase(addToCart.fulfilled, (state, action) => {
         state.items = action.payload;
       })
-      .addCase(decreaseQuantity.fulfilled, (state, action) => {
+      .addCase(updateQuantity.fulfilled, (state, action) => {
         state.items = action.payload;
       })
       .addCase(removeFromCart.fulfilled, (state, action) => {
         state.items = action.payload;
       })
-      .addCase(clearCart.fulfilled, state => {
-        state.items = [];
-      });
   },
 });
 

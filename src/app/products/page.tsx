@@ -8,12 +8,15 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Star, Heart, ShoppingCart, Filter, Grid, List } from "lucide-react"
+import { Star, Heart, ShoppingCart, Filter, Grid, List, ChartNoAxesColumnIcon } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Link from "next/link"
 import  {Product} from "@/components/Tabs/Products"
 import API from "@/lib/api"
-import { useAppSelector } from "@/store/hooks"
+import { useAppDispatch } from "@/store/hooks"
+import { addToCart } from "@/store/slices/cartSlice"
+import { toast } from "react-hot-toast"
+import { Console } from "console"
 
 const categories = ["All", "Electronics", "Fashion", "Home", "Audio", "Accessories"]
 const priceRanges = [
@@ -34,8 +37,7 @@ export default function ProductsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [favouriteProduct, setFavouriteProduct] = useState<string[]>([])
-  const user = useAppSelector((state: any) => state.user);
-  const [addCart, useAddCart]= useState<string>()
+  const dispatch = useAppDispatch()
 
 
   useEffect(() => {
@@ -46,43 +48,75 @@ export default function ProductsPage() {
 
   const fetchFavourites = async () => {
   try {
+    const storedUser = String(localStorage.getItem("user"));
+    const parsedUser = JSON.parse(storedUser);
+    const token = parsedUser?.token;
+    console.log("🔑 User token:", token);
+
+    if(!token) {
+      console.warn("No user token found, skipping favourites fetch");
+      return;
+    }
+
     const response = await API.get("/fav/getAllFavourite");
-    console.log(localStorage.getItem("user.token"))
+    
 
     console.log("💾 Raw favourites data:", response.data);
 
-    // Check if product field is populated
+  
     const favProductIds = response.data.map((fav: any) =>
       typeof fav.product === "string" ? fav.product : fav.product._id
     );
 
-    setFavouriteProduct(favProductIds); // ✅ Now correctly stores product IDs
+    setFavouriteProduct(favProductIds); 
   } catch (error) {
-    console.error("❌ Failed to load favourites", error);
+    console.error("Failed to load favourites", error);
   }
 };
 
 
-  useEffect(() => {
+useEffect(() => {
   fetchFavourites();
 }, []);
 
 
 const toggleFavourite = async (productId: string): Promise<void> => {
   try {
-    if (favouriteProduct.includes(productId)) {
+    const storedUser = String(localStorage.getItem("user"));
+    const parsedUser = JSON.parse(storedUser);
+    const token = parsedUser?.token;
+    console.log("🔑 User token:", token);
+
+    // Update local state regardless
+    const alreadyInFav = favouriteProduct.includes(productId);
+
+    setFavouriteProduct((prev) =>
+      alreadyInFav ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
+
+    // Save guest favs to localStorage
+    if (!token) {
+      const guestFavs = alreadyInFav
+        ? favouriteProduct.filter((id) => id !== productId)
+        : [...favouriteProduct, productId];
+      localStorage.setItem("guest.favourites", JSON.stringify(guestFavs));
+      return;
+    }
+
+    // If logged in, sync with backend
+    if (token&&alreadyInFav) {
       await API.delete("/fav/removeFavorite", {
         data: { productId },
       });
-      setFavouriteProduct((prev) => prev.filter((id) => id !== productId));
     } else {
       await API.post("/fav/createFavorite", { productId });
-      setFavouriteProduct((prev) => [...prev, productId]);
     }
   } catch (err) {
     console.error("Toggle favourite failed:", err);
+    toast.error("Something went wrong while updating favourites.");
   }
 };
+
 
 
 
@@ -111,18 +145,15 @@ const toggleFavourite = async (productId: string): Promise<void> => {
 };
 
 
-const addToCart= async()=>{
-  try{
-    const res = await API.post("/cart/addToCart",)
-
-
-
-
-  }catch(error){
-    console.log(error)
-
+const handleAddToCart = async (productId: string) => {
+  try {
+    await dispatch(addToCart({ productId, quantity: 1 })).unwrap();
+    toast.success('Added to cart!');
+  } catch (err) {
+    toast.error('Failed to add item!');
   }
-}
+};
+
 
   const FilterSidebar = () => (
     <div className="space-y-6">
@@ -310,6 +341,7 @@ const addToCart= async()=>{
                             onClick={(e) => {
                               e.preventDefault()
                               e.stopPropagation()
+                              handleAddToCart(product._id)
                               // Handle add to cart
                             }}
                           >
@@ -378,7 +410,7 @@ const addToCart= async()=>{
                                 onClick={(e) => {
                                   e.preventDefault()
                                   e.stopPropagation()
-                                  // Handle add to cart
+                                  handleAddToCart(product._id)
                                 }}
                               >
                                 <ShoppingCart className="h-4 w-4 mr-2" />
@@ -413,30 +445,30 @@ const addToCart= async()=>{
         </div>
 
         <div className="flex justify-center items-center mt-8 space-x-4">
-  <Button
-    variant="outline"
-    disabled={currentPage === 1}
-    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-  >
-    Previous
-  </Button>
-
-  <span className="text-sm text-muted-foreground">
-    Page {currentPage} of {totalPages}
-  </span>
-
-  <Button
-    variant="outline"
-    disabled={currentPage === totalPages}
-    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-  >
-    Next
-  </Button>
-</div>
+          <Button
+            variant="outline"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          >
+            Previous
+          </Button>
+        
+          <span className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </span>
+        
+          <Button
+            variant="outline"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          >
+            Next
+          </Button>
+        </div>
 
       </main>
 
-      <Footer />
+       <Footer />
     </div>
   )
 }

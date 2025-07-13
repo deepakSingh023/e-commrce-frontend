@@ -1,8 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { use, useEffect, useState } from "react"
 import Link from "next/link"
-import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -11,52 +10,59 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Tag } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useAppDispatch,useAppSelector } from "@/store/hooks"
+import {addToCart,fetchCart,updateQuantity,removeFromCart} from "@/store/slices/cartSlice"
+
 
 interface CartItem {
   id: number
   name: string
   price: number
-  originalPrice?: number
   quantity: number
   image: string
   size?: string
-  color?: string
 }
 
 export default function CartPage() {
+  const dispatch = useAppDispatch()
   const { toast } = useToast()
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: 1,
-      name: "Wireless Headphones Pro",
-      price: 299.99,
-      originalPrice: 399.99,
-      quantity: 1,
-      image: "/ep1.jpg?height=150&width=150",
-      color: "Black",
-    },
-    {
-      id: 2,
-      name: "Smart Watch Series X",
-      price: 199.99,
-      quantity: 2,
-      image: "/ep1.jpg?height=150&width=150",
-      color: "Silver",
-      size: "42mm",
-    },
-    {
-      id: 3,
-      name: "Premium Laptop Bag",
-      price: 79.99,
-      originalPrice: 99.99,
-      quantity: 1,
-      image: "/ep1.jpg?height=150&width=150",
-      color: "Brown",
-    },
-  ])
+  const [cartItems, setCartItems] = useState<CartItem[]>([])
 
   const [promoCode, setPromoCode] = useState("")
   const [appliedPromo, setAppliedPromo] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchCartItems = async () => {
+      try {
+        const response = await dispatch(fetchCart())
+        if (fetchCartItems.fulfilled.match(response)) {
+          setCartItems(response.payload)
+        } else {
+          toast({
+            title: "Error fetching cart",
+            description: state.error
+            variant: "destructive",
+          })
+        }
+      } catch (error) {
+        console.error("Failed to fetch cart items:", error) 
+        toast({
+          title: "Error",
+          description: "Failed to fetch cart items",
+          variant: "destructive",
+        })
+      }
+    }
+    fetchCartItems()
+  }, [dispatch, toast])
+
+  const fetchCartItems = () => {
+    try{
+      const items = useAppSelector((state) => state.cart.items)
+    }catch (error) {
+      console.error("Failed to fetch cart items:", error)
+    }
+  }
 
   const updateQuantity = (id: number, newQuantity: number) => {
     if (newQuantity === 0) {
@@ -164,9 +170,7 @@ export default function CartPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <span className="text-xl font-bold">${item.price}</span>
-                          {item.originalPrice && (
-                            <span className="text-sm text-muted-foreground line-through">${item.originalPrice}</span>
-                          )}
+                          
                         </div>
 
                         <div className="flex items-center space-x-2">
