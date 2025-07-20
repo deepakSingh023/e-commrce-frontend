@@ -26,7 +26,7 @@ const initialState: AuthState = {
 // Async login thunk
 export const login = createAsyncThunk(
   "auth/login",
-  async (userData: { username: string; password: string }, thunkAPI) => {
+  async (userData: { username: string; password: string } , thunkAPI) => {
     try {
       const res = await axios.post(`${API_URL}/login`, userData);
       return res.data; // user data with token

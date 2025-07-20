@@ -1,11 +1,10 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import {createOrder} from "@/store/slices/orderSlice"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,17 +16,20 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { CreditCard, Truck, Shield, ArrowLeft, Lock } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-
-interface CheckoutItem {
-  id: number
-  name: string
-  price: number
-  quantity: number
-  image: string
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { Product } from "@/components/Tabs/Products"
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string;
+  size?: string;
 }
-
 export default function CheckoutPage() {
+  const rawItems = useAppSelector((state) => state.cart.items);
   const router = useRouter()
+  const dispatch = useAppDispatch()
   const { toast } = useToast()
   const [isProcessing, setIsProcessing] = useState(false)
   const [formData, setFormData] = useState({
@@ -48,23 +50,16 @@ export default function CheckoutPage() {
     sameAsShipping: true,
   })
 
-  // Mock cart items
-  const cartItems: CheckoutItem[] = [
-    {
-      id: 1,
-      name: "Wireless Headphones Pro",
-      price: 299.99,
-      quantity: 1,
-      image: "/ep1.jpg?height=80&width=80",
-    },
-    {
-      id: 2,
-      name: "Smart Watch Series X",
-      price: 199.99,
-      quantity: 1,
-      image: "/ep1.jpg?height=80&width=80",
-    },
-  ]
+  const cartItems: CartItem[] = rawItems.map((item: any) => ({
+  id: item.product._id,
+  name: item.product.name,
+  price: item.product.price,
+  quantity: item.quantity,
+  image: item.product.images?.[0]?.url,
+   size: item.size || undefined,
+}))
+
+  
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const shipping = 9.99
@@ -80,19 +75,47 @@ export default function CheckoutPage() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsProcessing(true)
+  e.preventDefault()
+  setIsProcessing(true)
 
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsProcessing(false)
-      toast({
-        title: "Order placed successfully!",
-        description: "You will receive a confirmation email shortly.",
-      })
-      router.push("/checkout/success")
-    }, 3000)
+  const orderPayload = {
+  items: cartItems, // ✅ directly used
+  totalCost: total,
+  shippingInfo: {
+    firstname: formData.firstName,
+    lastname: formData.lastName,
+    address: formData.address,
+    city: formData.city,
+    state: formData.state,
+    zip: formData.zipCode,
+    phone: formData.phone,
+  },
+  userInfo: {
+    email: formData.email,
+  },
+  paymentMethod: "Card",
+};
+
+  try {
+     await dispatch(createOrder(orderPayload)).unwrap()
+
+    toast({
+      title: "✅ Order Placed Successfully!",
+      description: "Your order confirmation has been sent.",
+    })
+
+    router.push("/checkout/success")
+  } catch (error: any) {
+    console.error("❌ Order placement failed:", error)
+    toast({
+      title: "Order Failed",
+      description: error?.message || "Something went wrong",
+      variant: "destructive",
+    })
+  } finally {
+    setIsProcessing(false)
   }
+}
 
   return (
     <div className="min-h-screen">

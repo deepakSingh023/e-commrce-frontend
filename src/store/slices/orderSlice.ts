@@ -1,17 +1,16 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import API from '@/lib/api'; 
-import  {Product} from "@/components/Tabs/Products"
+import API from '@/lib/api';
+
 import { Draft } from 'immer';
-import { userInfo } from 'os';
 
-
+// Interfaces
 interface CartItem {
-  product: Product;
+  id: string;
+  name: string;
+  price: number;
   quantity: number;
-}
-
-interface usermail{
-  email: string
+  image: string;
+  size?: string;
 }
 
 interface ShippingInfo {
@@ -22,70 +21,124 @@ interface ShippingInfo {
   zip: string;
   state: string;
   phone: string;
+}
 
+interface usermail {
+  email: string;
+}
+
+interface Order {
+  _id?: string;
+  items: CartItem[];
+  totalCost: number;
+  shippingInfo: ShippingInfo;
+  paymentMethod: string;
+  userInfo: usermail;
+  createdAt?: string;
 }
 
 interface OrderState {
-  items: CartItem[];
-  totalCost: number;
-  shippingInfo: ShippingInfo | null;
-  paymentMethod: string | null;
+  orders: Order[];           // for fetchOrders
+  currentOrder: Order | null; // for createOrder response
   loading: boolean;
   error: string | null;
 }
 
+// Initial state
 const initialState: OrderState = {
-  items: [],
-  totalCost: 0,
-  shippingInfo: null,
-  paymentMethod: null,
+  orders: [],
+  currentOrder: null,
   loading: false,
   error: null,
 };
 
+// Thunks
 export const fetchOrders = createAsyncThunk(
   'order/fetchOrders',
   async (_, thunkAPI) => {
     try {
-      const res = await API.get('/order/getOrders');
-      return res.data;
+      const res = await API.get('/orders/getOrders');
+      return res.data as Order[];
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response.data.message || "Order fetching failed");
-    }
-  })
-
-export const createOrder = createAsyncThunk(
-  'order/createOrder',
-  async ({ items, totalCost, shippingInfo,userInfo, paymentMethod }: { items: CartItem[]; totalCost: number; shippingInfo: ShippingInfo; userInfo: usermail ; paymentMethod: string }, thunkAPI) => {
-    try {
-      const res = await API.post('/order/createOrder', { items, totalCost, shippingInfo, paymentMethod, userInfo });
-      return res.data;
-    } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response.data.message || "Order creation failed");
+      return thunkAPI.rejectWithValue(err.response?.data?.message || "Order fetching failed");
     }
   }
 );
 
+export const createOrder = createAsyncThunk(
+  'order/placeOrder',
+  async (
+    {
+      items,
+      totalCost,
+      shippingInfo,
+      userInfo,
+      paymentMethod,
+    }: {
+      items: CartItem[];
+      totalCost: number;
+      shippingInfo: ShippingInfo;
+      userInfo: usermail;
+      paymentMethod: string;
+    },
+    thunkAPI
+  ) => {
+    try {
+      const res = await API.post('/orders/placeOrder', {
+        orderItems: items,
+        totalCost,
+        shippingInfo,
+        paymentMethod,
+        userInfo,
+      });
+      return res.data as Order;
+    } catch (err: any) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message || "Order creation failed");
+    }
+  }
+);
+
+// Slice
 const orderSlice = createSlice({
   name: 'order',
   initialState,
-  reducers: {},
-  extraReducers:builder => {
+  reducers: {
+    clearCurrentOrder(state) {
+      state.currentOrder = null;
+    }
+  },
+  extraReducers: (builder) => {
     builder
-    .addCase(fetchOrders.pending, (state:Draft<OrderState>) => {
-      state.loading = true;
-    })
-    .addCase(fetchOrders.fulfilled, (state:Draft<OrderState>,action: PayloadAction<any>) => {
-      state.items = action.payload;
-      state.loading = false;
-    })
-    .addCase(fetchOrders.rejected, (state:Draft<OrderState>) => {
-      state.error = 'Failed to fetch orders';
-      state.loading = false;
-    })
-    .addCase(createOrder.fulfilled, (state:Draft<OrderState>,action: PayloadAction<any>) => {
-      state.items = action.payload;
-    })
-  }
+      // fetchOrders
+      .addCase(fetchOrders.pending, (state: Draft<OrderState>) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchOrders.fulfilled, (state: Draft<OrderState>, action: PayloadAction<Order[]>) => {
+        state.orders = action.payload;
+        state.loading = false;
+      })
+      .addCase(fetchOrders.rejected, (state: Draft<OrderState>, action: PayloadAction<any>) => {
+        state.error = action.payload;
+        state.loading = false;
+      })
 
-})
+      // createOrder
+      .addCase(createOrder.pending, (state: Draft<OrderState>) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createOrder.fulfilled, (state: Draft<OrderState>, action: PayloadAction<Order>) => {
+        state.currentOrder = action.payload;
+        state.loading = false;
+      })
+      .addCase(createOrder.rejected, (state: Draft<OrderState>, action: PayloadAction<any>) => {
+        state.error = action.payload;
+        state.loading = false;
+      });
+  },
+});
+
+export const { clearCurrentOrder } = orderSlice.actions;
+
+export default orderSlice.reducer;

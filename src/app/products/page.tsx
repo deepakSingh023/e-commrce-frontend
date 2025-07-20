@@ -89,6 +89,7 @@ const toggleFavourite = async (productId: string): Promise<void> => {
 
     // Update local state regardless
     const alreadyInFav = favouriteProduct.includes(productId);
+    localStorage.setItem("guest.favourites", JSON.stringify(favouriteProduct));
 
     setFavouriteProduct((prev) =>
       alreadyInFav ? prev.filter((id) => id !== productId) : [...prev, productId]

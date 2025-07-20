@@ -27,7 +27,7 @@ export default function CartPage() {
   const dispatch = useAppDispatch()
   const { toast } = useToast()
   const [cartItems, setCartItems] = useState<CartItem[]>([])
-
+  
   const [promoCode, setPromoCode] = useState("")
   const [appliedPromo, setAppliedPromo] = useState<string | null>(null)
 
@@ -50,7 +50,7 @@ export default function CartPage() {
           price: item.product.price,
           image: item.product.images?.[0].url,
           quantity: item.quantity,
-          size: item.size
+          size: item.size || undefined,
         }));
 
         setCartItems(items);
