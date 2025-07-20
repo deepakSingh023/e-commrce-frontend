@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import API from '@/lib/api'; // ✅ your custom axios instance
 import  {Product} from "@/components/Tabs/Products"
-
+import { Draft } from 'immer';
 
 
 interface CartItem {
@@ -22,37 +22,37 @@ const initialState: CartState = {
 };
 
 
-// ✅ 1. Fetch cart from backend
+
 export const fetchCart = createAsyncThunk('cart/fetchCart', async () => {
   const res = await API.get('/cart/getCartItems');
-  return res.data.cart;
+  return res.data;
 });
 
-// ✅ 2. Add to cart (calls /add)
+
 export const addToCart = createAsyncThunk(
   'cart/addToCart',
   async ({ productId, quantity }: { productId: string; quantity: number }) => {
     const res = await API.post(`/cart/addItemCart`, { productId, quantity });
-    return res.data.cart;
+    return res.data;
   }
 );
 
 
-// ✅ 3. Decrease quantity
+
 export const updateQuantity = createAsyncThunk(
   'cart/updateQuantity',
   async ({ productId, quantity }: { productId: string; quantity: number }) => {
     const res = await API.post(`/cart/updateQuantity`, { productId , quantity});
-    return res.data.cart;
+    return res.data;
   }
 );
 
-// ✅ 4. Remove item
+
 export const removeFromCart = createAsyncThunk(
   'cart/removeFromCart',
-  async (productId: string) => {
-    const res = await API.delete(`/cart/removeItemCart/${productId}`);
-    return res.data.cart;
+  async ({ productId }: { productId: string }) => {
+    const res = await API.delete(`/cart/removeItemCart`, {data :{productId}});
+    return res.data;
   }
 );
 
@@ -63,24 +63,24 @@ const cartSlice = createSlice({
   reducers: {},
   extraReducers: builder => {
     builder
-      .addCase(fetchCart.pending, state => {
+      .addCase(fetchCart.pending, (state:Draft<CartState>) => {
         state.loading = true;
       })
-      .addCase(fetchCart.fulfilled, (state, action) => {
+      .addCase(fetchCart.fulfilled, (state:Draft<CartState>,action: PayloadAction<CartItem[]>) => {
         state.items = action.payload;
         state.loading = false;
       })
-      .addCase(fetchCart.rejected, (state, action) => {
+      .addCase(fetchCart.rejected, (state:Draft<CartState>) => {
         state.error = 'Failed to fetch cart';
         state.loading = false;
       })
-      .addCase(addToCart.fulfilled, (state, action) => {
+      .addCase(addToCart.fulfilled, (state:Draft<CartState>, action: PayloadAction<CartItem[]>) => {
         state.items = action.payload;
       })
-      .addCase(updateQuantity.fulfilled, (state, action) => {
+      .addCase(updateQuantity.fulfilled, (state:Draft<CartState>,action: PayloadAction<CartItem[]>) => {
         state.items = action.payload;
       })
-      .addCase(removeFromCart.fulfilled, (state, action) => {
+      .addCase(removeFromCart.fulfilled, (state:Draft<CartState>,action: PayloadAction<CartItem[]>) => {
         state.items = action.payload;
       })
   },

@@ -11,11 +11,11 @@ import { Badge } from "@/components/ui/badge"
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Tag } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAppDispatch,useAppSelector } from "@/store/hooks"
-import {addToCart,fetchCart,updateQuantity,removeFromCart} from "@/store/slices/cartSlice"
+import {fetchCart,updateQuantity,removeFromCart} from "@/store/slices/cartSlice"
 
 
 interface CartItem {
-  id: number
+  id: string
   name: string
   price: number
   quantity: number
@@ -31,54 +31,95 @@ export default function CartPage() {
   const [promoCode, setPromoCode] = useState("")
   const [appliedPromo, setAppliedPromo] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchCartItems = async () => {
-      try {
-        const response = await dispatch(fetchCart())
-        if (fetchCartItems.fulfilled.match(response)) {
-          setCartItems(response.payload)
-        } else {
-          toast({
-            title: "Error fetching cart",
-            description: state.error
-            variant: "destructive",
-          })
+ useEffect(() => {
+  const fetchCartItems = async () => {
+    try {
+      const response = await dispatch(fetchCart());
+
+      console.log("FetchCart response:", response);
+
+      if (fetchCart.fulfilled.match(response)) {
+        if (!response.payload) {
+          console.error("❌ No payload returned!");
+          return;
         }
-      } catch (error) {
-        console.error("Failed to fetch cart items:", error) 
+
+        const items: CartItem[] = response.payload.map((item: any) => ({
+          id: item.product._id,
+          name: item.product.name,
+          price: item.product.price,
+          image: item.product.images?.[0].url,
+          quantity: item.quantity,
+          size: item.size
+        }));
+
+        setCartItems(items);
+      } else {
         toast({
-          title: "Error",
-          description: "Failed to fetch cart items",
+          title: "Error fetching cart",
+          description: response.error?.message ?? "Unknown error",
           variant: "destructive",
-        })
+        });
       }
+    } catch (error) {
+      console.error("Failed to fetch cart items:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch cart items",
+        variant: "destructive",
+      });
     }
-    fetchCartItems()
-  }, [dispatch, toast])
+  };
 
-  const fetchCartItems = () => {
-    try{
-      const items = useAppSelector((state) => state.cart.items)
-    }catch (error) {
-      console.error("Failed to fetch cart items:", error)
-    }
+  fetchCartItems();
+}, [dispatch, toast]);
+
+
+ const updateQuantities = (id: string, newQuantity: number) => {
+  if (newQuantity <= 0) {
+    removeItem(id); // delegate to remove logic
+    return;
   }
 
-  const updateQuantity = (id: number, newQuantity: number) => {
-    if (newQuantity === 0) {
-      removeItem(id)
-      return
-    }
-    setCartItems((items) => items.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item)))
-  }
-
-  const removeItem = (id: number) => {
-    setCartItems((items) => items.filter((item) => item.id !== id))
-    toast({
-      title: "Item removed",
-      description: "Item has been removed from your cart",
+  // Dispatch Redux thunk to update on backend and store
+  dispatch(updateQuantity({ productId: id, quantity: newQuantity }))
+    .unwrap()
+    .then(() => {
+      console.log("Updated quantity for", id, "to", newQuantity);
+      setCartItems((items) =>
+        items.map((item) =>
+          item.id === id ? { ...item, quantity: newQuantity } : item
+        )
+      );
     })
-  }
+    .catch(() => {
+      toast({
+        title: "Failed to update quantity",
+        variant: "destructive",
+      });
+    });
+};
+
+
+  const removeItem = (id: string) => {
+  // Dispatch Redux thunk to remove from backend and store
+  dispatch(removeFromCart({ productId: id}))
+    .unwrap()
+    .then(() => {
+      setCartItems((items) => items.filter((item) => item.id !== id));
+      toast({
+        title: "Item removed",
+        description: "Item has been removed from your cart",
+      });
+    })
+    .catch(() => {
+      toast({
+        title: "Failed to remove item",
+        variant: "destructive",
+      });
+    });
+};
+
 
   const applyPromoCode = () => {
     if (promoCode.toLowerCase() === "save10") {
@@ -143,7 +184,7 @@ export default function CartPage() {
                 <CardContent className="p-6">
                   <div className="flex gap-4">
                     <img
-                      src={item.image || "/placeholder.svg"}
+                       src={item.image || "/placeholder.svg"}
                       alt={item.name}
                       className="w-24 h-24 object-cover rounded-lg"
                     />
@@ -153,7 +194,6 @@ export default function CartPage() {
                         <div>
                           <h3 className="font-semibold text-lg">{item.name}</h3>
                           <div className="flex gap-2 text-sm text-muted-foreground">
-                            {item.color && <span>Color: {item.color}</span>}
                             {item.size && <span>Size: {item.size}</span>}
                           </div>
                         </div>
@@ -178,7 +218,7 @@ export default function CartPage() {
                             variant="outline"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => updateQuantities(item.id, item.quantity - 1)}
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
@@ -187,7 +227,7 @@ export default function CartPage() {
                             variant="outline"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => updateQuantities(item.id, item.quantity + 1)}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
