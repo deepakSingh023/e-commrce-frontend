@@ -18,10 +18,12 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1)
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [reviews, setReviews] = useState<{
+  username: string;
   user: string;
-  message: string;
+  comment: string;
   createdAt: string;
   }[]>([]);
+
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [useFallback, setUseFallback] = useState(false)
@@ -83,9 +85,9 @@ export default function ProductDetailPage() {
   const toggleWishlist = async () => {
     try {
       if (isWishlisted) {
-        await API.delete(`/wishlist/${product?._id}`)
+        await API.delete(`/fav/removeFavorite`, { data: { productId: product?._id } })
       } else {
-        await API.post('/wishlist', { productId: product?._id })
+        await API.post('/fav/createFavorite', { productId: product?._id })
       }
       setIsWishlisted(!isWishlisted)
       toast({
@@ -105,8 +107,9 @@ export default function ProductDetailPage() {
   if (!reviewMessage.trim()) return;
 
   try {
-    const res = await API.post(`/products/${product?._id}/addReview`, {
-      reviewMessage,
+    const res = await API.post(`/products/addReview`, {
+      comment:reviewMessage,
+      productId: product?._id
     });
 
     toast({ title: "Review submitted successfully" });
@@ -156,12 +159,7 @@ export default function ProductDetailPage() {
 
   return (
     <div className="min-h-screen">
-      
-      {useFallback && (
-        <div className="bg-yellow-100 text-yellow-800 text-center p-2">
-          Using sample data - changes won't be saved
-        </div>
-      )}
+     
       <main className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-8">
@@ -321,12 +319,12 @@ export default function ProductDetailPage() {
           {/* Reviews List */}
           {reviews.length > 0 ? (
             <div className="space-y-6">
-              {reviews.map((review) => (
-                <div key={review.createdAt} className="border-b pb-6 last:border-b-0">
+              {reviews.map((review, index) => (
+                <div key={`${review.username}-${review.createdAt}-${index}`} className="border-b pb-6 last:border-b-0">
                   <div className="flex items-center space-x-2 mb-2">
-                    <span className="font-medium">{review.user}</span>
+                    <span className="font-medium">{review.username}</span>
                   </div>
-                  <p className="text-muted-foreground">{review.message}</p>
+                  <p className="text-muted-foreground">{review.comment}</p>
                 </div>
               ))}
             </div>

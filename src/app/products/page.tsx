@@ -329,7 +329,7 @@ const handleAddToCart = async (productId: string) => {
                               
                             </div>
                             <span className="text-sm text-muted-foreground">
-                              <Star className="flex "></Star>({product.reviews})</span>
+                              <Star className="flex "></Star>({product.reviews.length})</span>
                           </div>
 
                           <div className="flex items-center space-x-2">
