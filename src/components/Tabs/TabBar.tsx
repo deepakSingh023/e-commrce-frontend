@@ -1,5 +1,6 @@
 "use client"
 import Products from "./Products"
+import Orders from "./Orders"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 
@@ -12,7 +13,7 @@ export default function TabBar() {
                 <TabsTrigger value="content">Content</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
             </TabsList>
-            <TabsContent value="orders">Account Content</TabsContent>
+            <TabsContent value="orders"><Orders/></TabsContent>
             <TabsContent value="products"><Products/></TabsContent>
             <TabsContent value="content">Account Content</TabsContent>
             <TabsContent value="analytics">Password Content</TabsContent>
