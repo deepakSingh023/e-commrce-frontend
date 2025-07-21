@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import API from '@/lib/api';
-
+import {FrontOrders} from "@/app/orders/page"
 import { Draft } from 'immer';
 
 // Interfaces
@@ -38,32 +38,49 @@ interface Order {
 }
 
 interface OrderState {
-  orders: Order[];           // for fetchOrders
-  currentOrder: Order | null; // for createOrder response
+  orders: FrontOrders[];   
+  counts: {                    
+    all: number;
+    pending: number;
+    processing: number;
+    shipped: number;
+    delivered: number;
+    cancelled: number;
+  };        
+  currentOrder: Order | null; 
   loading: boolean;
   error: string | null;
 }
 
-// Initial state
 const initialState: OrderState = {
   orders: [],
+  counts: {
+    all: 0,
+    pending: 0,
+    processing: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0,
+  },
   currentOrder: null,
   loading: false,
   error: null,
 };
 
-// Thunks
+
 export const fetchOrders = createAsyncThunk(
-  'order/fetchOrders',
-  async (_, thunkAPI) => {
-    try {
-      const res = await API.get('/orders/getOrders');
-      return res.data as Order[];
-    } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message || "Order fetching failed");
-    }
+  'orders/fetchOrders',
+  async (filters: { status?: string; search?: string } = {}) => {
+    const { status, search } = filters
+
+    const queryParams = new URLSearchParams()
+    if (status && status !== 'all') queryParams.append('status', status)
+    if (search) queryParams.append('search', search)
+
+    const res = await API.get(`/orders/getOrderById`, { params: queryParams })
+     return res.data as { orders: FrontOrders[]; counts: OrderState['counts'] };
   }
-);
+)
 
 export const createOrder = createAsyncThunk(
   'order/placeOrder',
@@ -103,6 +120,17 @@ const orderSlice = createSlice({
   name: 'order',
   initialState,
   reducers: {
+    clearOrders: (state) => {
+    state.orders = [];
+    state.counts = {
+      all: 0,
+      pending: 0,
+      processing: 0,
+      shipped: 0,
+      delivered: 0,
+      cancelled: 0,
+    };
+    },
     clearCurrentOrder(state) {
       state.currentOrder = null;
     }
@@ -114,9 +142,10 @@ const orderSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchOrders.fulfilled, (state: Draft<OrderState>, action: PayloadAction<Order[]>) => {
-        state.orders = action.payload;
-        state.loading = false;
+      .addCase(fetchOrders.fulfilled, (state, action: PayloadAction<{ orders: FrontOrders[]; counts: OrderState['counts'] }>) => {
+         state.orders = action.payload.orders;
+         state.counts = action.payload.counts;
+         state.loading = false;
       })
       .addCase(fetchOrders.rejected, (state: Draft<OrderState>, action: PayloadAction<any>) => {
         state.error = action.payload;
@@ -139,6 +168,6 @@ const orderSlice = createSlice({
   },
 });
 
-export const { clearCurrentOrder } = orderSlice.actions;
+export const { clearCurrentOrder, clearOrders } = orderSlice.actions;
 
 export default orderSlice.reducer;

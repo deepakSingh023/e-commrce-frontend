@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
-import { logout } from "@/store/slices/authSlice"
-
+import {logoutUser} from '@/lib/logoutUser'
 export default function Header() {
   const pathname = usePathname()
   const router = useRouter()
@@ -35,7 +34,8 @@ export default function Header() {
   }, [dispatch])
 
   const handleLogout = () => {
-    dispatch(logout())
+    dispatch(logoutUser())
+    
     router.push("/")
   }
 

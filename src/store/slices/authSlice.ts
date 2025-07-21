@@ -3,6 +3,10 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
+
+
+
+
 interface User {
   username : string;
   token: string;
@@ -56,6 +60,10 @@ const authSlice = createSlice({
     logout: (state) => {
       state.user = null;
       localStorage.removeItem("user");
+      localStorage.removeItem('user');      // clear user info
+      localStorage.removeItem('cartItems'); // clear cart
+      localStorage.removeItem('order');   
+    
     },
   },
   extraReducers: (builder) => {

@@ -3,109 +3,13 @@
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Star, Heart, ShoppingCart, Minus, Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import api from "@/lib/api"
-
-interface Review {
-  id: number
-  author: string
-  message: string
-}
-
-interface Product {
-  id: string
-  name: string
-  price: number
-  images: string[]
-  category: string
-  description: string
-  features: string[]
-  specifications: Record<string, string>
-  inStock: boolean
-  stockCount: number
-  reviews: Review[]
-}
-
-// Sample product data (fallback)
-const sampleProducts = {
-  "1": {
-    id: "1",
-    name: "Wireless Headphones Pro",
-    price: 299.99,
-    images: [
-      "/ep1.jpg?height=500&width=500",
-      "/ep1.jpg?height=500&width=500",
-      "/ep1.jpg?height=500&width=500",
-      "/ep1.jpg?height=500&width=500",
-    ],
-    category: "Electronics",
-    description: "Experience premium sound quality with our latest wireless headphones featuring active noise cancellation, 30-hour battery life, and premium comfort design.",
-    features: [
-      "Active Noise Cancellation",
-      "30-hour battery life",
-      "Premium comfort design",
-      "Bluetooth 5.0 connectivity",
-      "Quick charge technology",
-      "Voice assistant support",
-    ],
-    specifications: {
-      "Driver Size": "40mm",
-      "Frequency Response": "20Hz - 20kHz",
-      Impedance: "32 ohms",
-      "Battery Life": "30 hours",
-      "Charging Time": "2 hours",
-      Weight: "250g",
-    },
-    inStock: true,
-    stockCount: 15,
-    reviews: [
-      { id: 1, author: "John D.", message: "Great sound quality!" },
-      { id: 2, author: "Sarah M.", message: "Very comfortable to wear for long periods." }
-    ]
-  },
-  "2": {
-    id: "2",
-    name: "Smart Watch Series X",
-    price: 199.99,
-    images: [
-      "/ep1.jpg?height=500&width=500",
-      "/ep1.jpg?height=500&width=500",
-      "/ep1.jpg?height=500&width=500",
-    ],
-    category: "Electronics",
-    description: "Stay connected and track your fitness with our latest smartwatch featuring health monitoring, GPS, and all-day battery life.",
-    features: [
-      "Health monitoring sensors",
-      "Built-in GPS",
-      "Water resistant",
-      "All-day battery life",
-      "Customizable watch faces",
-      "Smart notifications",
-    ],
-    specifications: {
-      "Display Size": "1.4 inches",
-      "Battery Life": "18 hours",
-      "Water Resistance": "50 meters",
-      Connectivity: "Bluetooth 5.0, WiFi",
-      Sensors: "Heart rate, GPS, Accelerometer",
-      Weight: "45g",
-    },
-    inStock: true,
-    stockCount: 8,
-    reviews: [
-      { id: 1, author: "Mike T.", message: "Excellent fitness tracking features." }
-    ]
-  }
-}
-
-const getSampleProduct = (id: string) => {
-  return sampleProducts[id as keyof typeof sampleProducts]
-}
+import API from "@/lib/api"
+import { Product } from "@/components/Tabs/Products"
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -113,49 +17,40 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [isWishlisted, setIsWishlisted] = useState(false)
-  const [reviewMessage, setReviewMessage] = useState("")
+  const [reviews, setReviews] = useState<{
+  user: string;
+  message: string;
+  createdAt: string;
+  }[]>([]);
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
-  const [reviews, setReviews] = useState<Review[]>([])
   const [useFallback, setUseFallback] = useState(false)
-
+  const [reviewMessage, setReviewMessage] = useState("")
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        setLoading(true)
-        const response = await api.get(`/products/${params.id}`)
-        setProduct(response.data)
-        setReviews(response.data.reviews || [])
-        setUseFallback(false)
+        setLoading(true);
+        const response = await API.get(`/products/getProductbyId/${params.id}`);
+        console.log("Product ID param:", params.id);
+        setProduct(response.data);
+        setReviews(response.data.reviews || []);
+        setUseFallback(false);
       } catch (error) {
-        console.error("API failed, using sample data:", error)
-        const sampleProduct = getSampleProduct(params.id as string)
-        if (sampleProduct) {
-          setProduct(sampleProduct)
-          setReviews(sampleProduct.reviews || [])
-          setUseFallback(true)
-          toast({
-            title: "Using sample data",
-            description: "Couldn't connect to server, showing sample product",
-            variant: "default"
-          })
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to fetch product details",
-            variant: "destructive"
-          })
-        }
+        console.error("API failed, using sample data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch product details",
+          variant: "destructive"
+        });
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-
-    const checkWishlist = async () => {
-      if (useFallback) return // Skip API check if using sample data
-      
+   };      
+    
+    
+    const checkWishlist = async () => {  
       try {
-        const response = await api.get(`/wishlist/check?productId=${params.id}`)
+        const response = await API.get(`/fav/check?productId=${params.id}`)
         setIsWishlisted(response.data.isWishlisted)
       } catch (error) {
         console.error("Error checking wishlist status:", error)
@@ -167,18 +62,9 @@ export default function ProductDetailPage() {
   }, [params.id, toast, useFallback])
 
   const addToCart = async () => {
-    if (useFallback) {
-      toast({
-        title: "Sample mode",
-        description: "Cannot add to cart in sample data mode",
-        variant: "default"
-      })
-      return
-    }
-
     try {
-      await api.post('/cart', {
-        productId: product?.id,
+      await API.post('/cart/addItemCart', {
+        productId: product?._id,
         quantity
       })
       toast({
@@ -195,20 +81,11 @@ export default function ProductDetailPage() {
   }
 
   const toggleWishlist = async () => {
-    if (useFallback) {
-      setIsWishlisted(!isWishlisted)
-      toast({
-        title: isWishlisted ? "Removed from wishlist" : "Added to wishlist",
-        description: "Note: This is sample data - changes won't persist",
-      })
-      return
-    }
-
     try {
       if (isWishlisted) {
-        await api.delete(`/wishlist/${product?.id}`)
+        await API.delete(`/wishlist/${product?._id}`)
       } else {
-        await api.post('/wishlist', { productId: product?.id })
+        await API.post('/wishlist', { productId: product?._id })
       }
       setIsWishlisted(!isWishlisted)
       toast({
@@ -225,49 +102,29 @@ export default function ProductDetailPage() {
   }
 
   const submitReview = async () => {
-    if (!reviewMessage.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a review message",
-        variant: "destructive"
-      })
-      return
-    }
-    
-    if (useFallback) {
-      const newReview = {
-        id: Math.max(0, ...reviews.map(r => r.id)) + 1,
-        author: "You",
-        message: reviewMessage
-      }
-      setReviews([...reviews, newReview])
-      setReviewMessage("")
-      toast({
-        title: "Review submitted!",
-        description: "Note: This is sample data - reviews won't persist",
-      })
-      return
-    }
+  if (!reviewMessage.trim()) return;
 
-    try {
-      const response = await api.post(`/products/${product?.id}/reviews`, {
-        message: reviewMessage
-      })
-      
-      setReviews([...reviews, response.data])
-      setReviewMessage("")
-      toast({
-        title: "Review submitted!",
-        description: "Thank you for your feedback."
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to submit review",
-        variant: "destructive"
-      })
-    }
+  try {
+    const res = await API.post(`/products/${product?._id}/addReview`, {
+      reviewMessage,
+    });
+
+    toast({ title: "Review submitted successfully" });
+
+    const newReview = res.data;
+    setReviews((prev) => [...prev, newReview]);
+
+    setReviewMessage("");
+  } catch (err) {
+    console.error(err);
+    toast({
+      title: "Error",
+      description: "Could not submit review",
+      variant: "destructive",
+    });
   }
+};
+
 
   if (loading) {
     return (
@@ -324,27 +181,35 @@ export default function ProductDetailPage() {
           <div className="space-y-4">
             <div className="aspect-square rounded-2xl overflow-hidden bg-muted">
               <img
-                src={product.images[selectedImage] || "/ep1.jpg"}
+                src={
+                  Array.isArray(product.images) && product.images.length > 0
+                    ? product.images[selectedImage]?.url
+                    : "/ep1.jpg"
+                }
                 alt={product.name}
                 className="w-full h-full object-cover"
-              />
+                />
             </div>
             <div className="grid grid-cols-4 gap-4">
-              {product.images.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`aspect-square rounded-lg overflow-hidden border-2 transition-colors ${
-                    selectedImage === index ? "border-primary" : "border-transparent"
-                  }`}
-                >
-                  <img
-                    src={image || "/ep1.jpg"}
-                    alt={`${product.name} ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
+              {Array.isArray(product.images) &&
+                product.images.length > 0 &&
+                product.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    className={`w-16 h-16 rounded-md overflow-hidden border-2 ${
+                      selectedImage === index ? "border-black" : "border-transparent"
+                    }`}
+                  >
+                    <img
+                      src={image.url}
+                      alt={`Thumbnail ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                  ))}
+              
+              
             </div>
           </div>
 
@@ -367,7 +232,7 @@ export default function ProductDetailPage() {
             <div className="flex items-center space-x-2">
               <div className={`w-3 h-3 rounded-full ${product.inStock ? "bg-green-500" : "bg-red-500"}`} />
               <span className={product.inStock ? "text-green-600" : "text-red-600"}>
-                {product.inStock ? `In Stock (${product.stockCount} available)` : "Out of Stock"}
+                {product.inStock ? `In Stock (${product.stock} available)` : "Out of Stock"}
               </span>
             </div>
 
@@ -388,8 +253,8 @@ export default function ProductDetailPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setQuantity(Math.min(product.stockCount, quantity + 1))}
-                    disabled={quantity >= product.stockCount}
+                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                    disabled={quantity >= product.stock}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -457,9 +322,9 @@ export default function ProductDetailPage() {
           {reviews.length > 0 ? (
             <div className="space-y-6">
               {reviews.map((review) => (
-                <div key={review.id} className="border-b pb-6 last:border-b-0">
+                <div key={review.createdAt} className="border-b pb-6 last:border-b-0">
                   <div className="flex items-center space-x-2 mb-2">
-                    <span className="font-medium">{review.author}</span>
+                    <span className="font-medium">{review.user}</span>
                   </div>
                   <p className="text-muted-foreground">{review.message}</p>
                 </div>

@@ -6,7 +6,7 @@ import { combineReducers } from "redux";
 import authSlice from "@/store/slices/authSlice";
 import adminAuthSlice from "@/store/slices/adminAuthSlice";
 import CartSlice from "@/store/slices/cartSlice";
-
+import orderSlice from "@/store/slices/orderSlice";
 const persistConfig = {
   key: "root",
   storage,
@@ -16,6 +16,7 @@ const rootReducer = combineReducers({
   auth:authSlice,
   adminAuth:adminAuthSlice,
   cart:CartSlice, 
+  order:orderSlice
   
 });
 
