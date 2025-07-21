@@ -1,53 +1,36 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Star, Heart, ShoppingCart } from "lucide-react"
+import { useState, useEffect } from "react"
+import API from "@/lib/api"
+import { Product } from "@/components/Tabs/Products"
 
-const featuredProducts = [
-  {
-    id: 1,
-    name: "Wireless Headphones Pro",
-    price: 299.99,
-    originalPrice: 399.99,
-    rating: 4.8,
-    reviews: 124,
-    image: "/ep1.jpg?height=300&width=300",
-    badge: "Best Seller",
-  },
-  {
-    id: 2,
-    name: "Smart Watch Series X",
-    price: 199.99,
-    originalPrice: 249.99,
-    rating: 4.9,
-    reviews: 89,
-    image: "/ep1.jpg?height=300&width=300",
-    badge: "New",
-  },
-  {
-    id: 3,
-    name: "Premium Laptop Bag",
-    price: 79.99,
-    originalPrice: 99.99,
-    rating: 4.7,
-    reviews: 156,
-    image: "/ep1.jpg?height=300&width=300",
-    badge: "Sale",
-  },
-  {
-    id: 4,
-    name: "Gaming Mechanical Keyboard",
-    price: 149.99,
-    originalPrice: 199.99,
-    rating: 4.6,
-    reviews: 203,
-    image: "/ep1.jpg?height=300&width=300",
-    badge: "Hot",
-  },
-]
+interface ProductWithFavorite extends Product {
+  isFavorite: boolean;
+}
+
+
+
 
 export default function FeaturedProducts() {
+
+  const [featuredProducts, setFeaturedProducts] = useState<ProductWithFavorite[]>([]);
+
+  useEffect(() => {
+    const fetchFeaturedProducts = async () => {
+      try {
+        const res = await API.get("products/getFeaturedProducts");
+        setFeaturedProducts(res.data || []);
+      } catch (err) {
+        console.error("Error fetching products:", err);
+      }
+    };
+    fetchFeaturedProducts();
+  },[])
   return (
     <section className="py-16 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -60,21 +43,26 @@ export default function FeaturedProducts() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {featuredProducts.map((product) => (
-            <Card key={product.id} className="group hover:shadow-xl transition-all duration-300">
+            <Card key={product._id} className="group hover:shadow-xl transition-all duration-300">
               <CardContent className="p-0">
                 <div className="relative overflow-hidden rounded-t-lg">
                   <img
-                    src={product.image || "/placeholder.svg"}
+                    src={product.images[0]?.url || "/placeholder.svg"}
                     alt={product.name}
                     className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <Badge className="absolute top-3 left-3" variant="secondary">
-                    {product.badge}
+                    {product.category}
                   </Badge>
                   <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button size="icon" variant="secondary" className="h-8 w-8">
-                      <Heart className="h-4 w-4" />
+                      <Heart
+                        className={`h-4 w-4 transition-colors duration-300 ${
+                          product.isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground"
+                        }`}
+                      />
                     </Button>
+
                   </div>
                 </div>
 
@@ -84,14 +72,12 @@ export default function FeaturedProducts() {
                   <div className="flex items-center space-x-2">
                     <div className="flex items-center">
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-medium ml-1">{product.rating}</span>
                     </div>
-                    <span className="text-sm text-muted-foreground">({product.reviews})</span>
+                    <span className="text-sm text-muted-foreground">({product.reviews.length})</span>
                   </div>
 
                   <div className="flex items-center space-x-2">
                     <span className="text-xl font-bold">${product.price}</span>
-                    <span className="text-sm text-muted-foreground line-through">${product.originalPrice}</span>
                   </div>
 
                   <Button className="w-full" size="sm">
