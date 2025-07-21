@@ -19,7 +19,7 @@ interface AuthState {
 }
 
 // Express backend base URL
-const API_URL = "http://localhost:5000/api/auth"; // adjust this
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/auth`; 
 
 const initialState: AuthState = {
   user: null,

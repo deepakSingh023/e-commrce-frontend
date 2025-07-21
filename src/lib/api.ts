@@ -4,7 +4,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api", // your backend URL
+  baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api`, // your backend URL
 });
 
 // This sets the token from localStorage/sessionStorage before every request

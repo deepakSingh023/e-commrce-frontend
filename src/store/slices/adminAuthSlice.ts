@@ -23,7 +23,7 @@ export const adminLogin = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/admin-login", credentials);
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/admin-login`, credentials);
       const data = res.data;
 
       if (data?.admin?.role !== "admin") {
