@@ -1,31 +1,3 @@
-// import AnalyticsDashboard from "../../../../components/Tabs/AnalyticsDashboard";
-
-// const AnalyticsPage = async () => {
-//   // Fetch analytics data
-//   let analyticsData = null;
-//   try {
-//     const res = await fetch(`http://localhost:3000/api/admin/analytics`, {
-//       cache: 'no-store'
-//     });
-
-//     if (!res.ok) throw new Error('Failed to fetch analytics data');
-
-//     analyticsData = await res.json();
-//   } catch (error) {
-//     console.error('Analytics page error:', error);
-//     analyticsData = { error: 'Failed to load analytics data' };
-//   }
-
-//   return (
-//     <div className="bg-gray-50 min-h-screen">
-//       <div className="container mx-auto px-4 py-8">
-//         <AnalyticsDashboard data={analyticsData} />
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default AnalyticsPage;
 
 "use client"
 import React, { useState, useEffect } from 'react';
