@@ -2,14 +2,32 @@
 
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
-import { Package, Trash2 } from "lucide-react"
+import { Package, Trash2, AlertCircle } from "lucide-react"
 import API from "@/lib/api"
-import { FrontOrders } from "@/app/orders/page"
 import { Button } from "@/components/ui/button"
 
 export default function Orders() {
-  const [Orders, setOrders] = useState<FrontOrders[]>([])
+  const [Orders, setOrders] = useState<TransformedOrder[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const statuses = ["pending", "processing", "shipped", "delivered", "cancelled"]
+  
+  // Type for the transformed order data
+  type TransformedOrder = {
+    id: string
+    orderId: string
+    date: string
+    total: number
+    status: string
+    trackingNumber?: string | null
+    estimatedDelivery?: string | null
+    items: {
+      name: string
+      quantity: number
+      price: number
+      image: string
+    }[]
+  }
 
   useEffect(() => {
     fetchOrders()
@@ -17,24 +35,75 @@ export default function Orders() {
 
   const fetchOrders = async () => {
     try {
+      setLoading(true)
+      setError(null)
+      
+      // Check if user is authenticated
+      const token = localStorage.getItem('authToken') // Adjust based on your auth implementation
+      if (!token) {
+        setError('Please log in to view orders')
+        setLoading(false)
+        return
+      }
+
       const res = await API.get("/orders/getAllOrders")
-      setOrders(res.data.orders || [])
-    } catch (err) {
+      
+      // The API returns data directly as an array
+      const rawOrders = res.data
+      
+      console.log('Raw orders from API:', rawOrders)
+      
+      if (Array.isArray(rawOrders)) {
+        // Transform the backend data to match frontend interface
+        const transformedOrders = rawOrders.map(order => ({
+          id: order._id,
+          orderId: order.orderId,
+          date: order.createdAt,
+          total: order.totalPrice,
+          status: order.status.toLowerCase(), // Convert "Pending" to "pending"
+          trackingNumber: order.trackingNumber || null,
+          estimatedDelivery: order.estimatedDelivery || null,
+          items: order.orderItems.map((item: any) => ({
+            name: item.name,
+            quantity: item.qty,
+            price: item.price,
+            image: item.image
+          }))
+        }))
+        
+        setOrders(transformedOrders)
+        console.log('Transformed orders:', transformedOrders)
+      } else {
+        setError('Invalid response format')
+      }
+    } catch (err: any) {
       console.error("Error fetching orders", err)
+      
+      if (err.response?.status === 401) {
+        setError('Unauthorized: Please log in again')
+      } else if (err.response?.status === 403) {
+        setError('Access denied: Insufficient permissions')
+      } else {
+        setError(err.response?.data?.message || 'Failed to fetch orders')
+      }
+    } finally {
+      setLoading(false)
     }
   }
 
   const deleteOrder = async (id: string) => {
     try {
-      await API.delete(`/admin/deleteOrder/${id}`);
-
+      await API.delete(`/admin/deleteOrder/${id}`)
       setOrders((prev) => prev.filter((order) => order.id !== id))
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error deleting order:", err)
+      if (err.response?.status === 401) {
+        setError('Unauthorized: Please log in again')
+      }
     }
   }
 
-  const updateOrderStatus = async (id: string, newStatus: FrontOrders["status"]) => {
+  const updateOrderStatus = async (id: string, newStatus: string) => {
     try {
       await API.patch(`/admin/updateOrderStatus`, { status: newStatus, orderId: id })
       setOrders((prev) =>
@@ -42,9 +111,42 @@ export default function Orders() {
           order.id === id ? { ...order, status: newStatus } : order
         )
       )
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error updating order status:", err)
+      if (err.response?.status === 401) {
+        setError('Unauthorized: Please log in again')
+      }
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading orders...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-gray-50 min-h-screen">
+        <div className="container mx-auto px-4 py-8">
+          <div className="bg-white rounded-lg shadow-sm">
+            <div className="p-6 text-center">
+              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-500" />
+              <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading Orders</h2>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <Button onClick={fetchOrders} variant="outline">
+                Try Again
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -59,7 +161,28 @@ export default function Orders() {
 
           {/* Order Content */}
           <div className="p-6">
-            <h2 className="text-lg font-semibold mb-4">All Orders ({Orders.length})</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">All Orders ({Orders.length})</h2>
+              <div className="space-x-2">
+                <Button onClick={fetchOrders} variant="outline" size="sm">
+                  Refresh
+                </Button>
+                <Button 
+                  onClick={async () => {
+                    try {
+                      const res = await API.get("/admin/getAllOrders")
+                      console.log('Admin endpoint response:', res.data)
+                    } catch (err) {
+                      console.log('Admin endpoint error:', err)
+                    }
+                  }} 
+                  variant="outline" 
+                  size="sm"
+                >
+                  Try Admin Endpoint
+                </Button>
+              </div>
+            </div>
 
             <div className="space-y-4">
               {Orders.length > 0 ? (
@@ -125,7 +248,7 @@ export default function Orders() {
                           className="border rounded px-2 py-1 text-sm"
                           value={order.status}
                           onChange={(e) =>
-                            updateOrderStatus(order.id, e.target.value as FrontOrders["status"])
+                            updateOrderStatus(order.id, e.target.value)
                           }
                         >
                           {statuses.map((s) => (
