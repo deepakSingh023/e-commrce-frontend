@@ -68,7 +68,7 @@ export default function OrdersPage() {
     dispatch(fetchOrders({ status: statusFilter, search: searchQuery }))
   }, [statusFilter, searchQuery, dispatch])
 
-  const orders = useAppSelector((state) => state.order.orders)
+  const orders = useAppSelector((state) => state.order.orders) || []
   const counts = useAppSelector((state) => state.order.counts) || {
     all: 0,
     pending: 0,

@@ -60,7 +60,6 @@ const authSlice = createSlice({
     logout: (state) => {
       state.user = null;
       localStorage.removeItem("user");
-      localStorage.removeItem('user');      // clear user info
       localStorage.removeItem('cartItems'); // clear cart
       localStorage.removeItem('order');   
     

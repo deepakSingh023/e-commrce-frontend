@@ -2,6 +2,7 @@
 import Products from "./Products"
 import Orders from "./Orders"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import AnalyticsDashboard from "../admin/AnalyticsDashboard"
 
 
 export default function TabBar() {
@@ -16,7 +17,7 @@ export default function TabBar() {
             <TabsContent value="orders"><Orders/></TabsContent>
             <TabsContent value="products"><Products/></TabsContent>
             <TabsContent value="content">Account Content</TabsContent>
-            <TabsContent value="analytics">Password Content</TabsContent>
+            <TabsContent value="analytics"><AnalyticsDashboard/></TabsContent>
         </Tabs>
     )
 }
