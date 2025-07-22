@@ -67,7 +67,6 @@ const initialState: OrderState = {
   error: null,
 };
 
-
 export const fetchOrders = createAsyncThunk(
   'orders/fetchOrders',
   async (filters: { status?: string; search?: string } = {}) => {
@@ -101,16 +100,33 @@ export const createOrder = createAsyncThunk(
     thunkAPI
   ) => {
     try {
+      // Transform items to match backend expectations
+      const transformedItems = items.map(item => ({
+        id: item.id,           // Backend expects 'id' field
+        quantity: item.quantity,
+        size: item.size,
+        // Include other fields that might be needed
+        name: item.name,
+        price: item.price,
+        image: item.image
+      }));
+
       const res = await API.post('/orders/placeOrder', {
-        orderItems: items,
+        orderItems: transformedItems,  // Use transformed items
         totalCost,
         shippingInfo,
         paymentMethod,
-        userInfo,
+        userInfo,  // Include userInfo for email
       });
+      
       return res.data as Order;
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message || "Order creation failed");
+      // Better error handling
+      const errorMessage = err.response?.data?.message || 
+                          err.message || 
+                          "Order creation failed";
+      console.error('Order creation error:', errorMessage);
+      return thunkAPI.rejectWithValue(errorMessage);
     }
   }
 );
@@ -121,18 +137,22 @@ const orderSlice = createSlice({
   initialState,
   reducers: {
     clearOrders: (state) => {
-    state.orders = [];
-    state.counts = {
-      all: 0,
-      pending: 0,
-      processing: 0,
-      shipped: 0,
-      delivered: 0,
-      cancelled: 0,
-    };
+      state.orders = [];
+      state.counts = {
+        all: 0,
+        pending: 0,
+        processing: 0,
+        shipped: 0,
+        delivered: 0,
+        cancelled: 0,
+      };
     },
     clearCurrentOrder(state) {
       state.currentOrder = null;
+    },
+    // Add a reducer to clear errors
+    clearError(state) {
+      state.error = null;
     }
   },
   extraReducers: (builder) => {
@@ -168,6 +188,6 @@ const orderSlice = createSlice({
   },
 });
 
-export const { clearCurrentOrder, clearOrders } = orderSlice.actions;
+export const { clearCurrentOrder, clearOrders, clearError } = orderSlice.actions;
 
 export default orderSlice.reducer;

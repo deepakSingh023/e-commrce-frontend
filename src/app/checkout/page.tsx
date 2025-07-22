@@ -18,6 +18,7 @@ import { CreditCard, Truck, Shield, ArrowLeft, Lock } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { Product } from "@/components/Tabs/Products"
+
 interface CartItem {
   id: string;
   name: string;
@@ -26,8 +27,10 @@ interface CartItem {
   image: string;
   size?: string;
 }
+
 export default function CheckoutPage() {
-  const rawItems = useAppSelector((state) => state.cart.items);
+  // Add default empty array to prevent undefined errors
+  const rawItems = useAppSelector((state) => state.cart?.items || []);
   const router = useRouter()
   const dispatch = useAppDispatch()
   const { toast } = useToast()
@@ -50,21 +53,34 @@ export default function CheckoutPage() {
     sameAsShipping: true,
   })
 
-  const cartItems: CartItem[] = rawItems.map((item: any) => ({
-  id: item.product._id,
-  name: item.product.name,
-  price: item.product.price,
-  quantity: item.quantity,
-  image: item.product.images?.[0]?.url,
-   size: item.size || undefined,
-}))
-
-  
+  // Add error handling and validation for cart items mapping
+  const cartItems: CartItem[] = Array.isArray(rawItems) 
+    ? rawItems.map((item: any) => ({
+        id: item.product?._id || item.id || '',
+        name: item.product?.name || item.name || 'Unknown Item',
+        price: item.product?.price || item.price || 0,
+        quantity: item.quantity || 1,
+        image: item.product?.images?.[0]?.url || item.image || '/ep1.jpg',
+        size: item.size || undefined,
+      })).filter(item => item.id) // Filter out items without valid IDs
+    : [];
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const shipping = 9.99
   const tax = subtotal * 0.08
   const total = subtotal + shipping + tax
+
+  // Redirect if cart is empty
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      toast({
+        title: "Cart is empty",
+        description: "Please add items to your cart before checkout.",
+        variant: "destructive",
+      })
+      router.push('/cart')
+    }
+  }, [cartItems.length, router, toast])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
@@ -75,52 +91,70 @@ export default function CheckoutPage() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  setIsProcessing(true)
+    e.preventDefault()
+    
+    // Validate cart items before processing
+    if (cartItems.length === 0) {
+      toast({
+        title: "Cart is empty",
+        description: "Cannot process order with empty cart.",
+        variant: "destructive",
+      })
+      return
+    }
 
-  const orderPayload = {
-  items: cartItems, // ✅ directly used
-  totalCost: total,
-  shippingInfo: {
-    firstname: formData.firstName,
-    lastname: formData.lastName,
-    address: formData.address,
-    city: formData.city,
-    state: formData.state,
-    zip: formData.zipCode,
-    phone: formData.phone,
-  },
-  userInfo: {
-    email: formData.email,
-  },
-  paymentMethod: "Card",
-};
+    setIsProcessing(true)
 
-  try {
-     await dispatch(createOrder(orderPayload)).unwrap()
+    const orderPayload = {
+      items: cartItems,
+      totalCost: total,
+      shippingInfo: {
+        firstname: formData.firstName,
+        lastname: formData.lastName,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zip: formData.zipCode,
+        phone: formData.phone,
+      },
+      userInfo: {
+        email: formData.email,
+      },
+      paymentMethod: "Card",
+    };
 
-    toast({
-      title: "✅ Order Placed Successfully!",
-      description: "Your order confirmation has been sent.",
-    })
+    try {
+      await dispatch(createOrder(orderPayload)).unwrap()
 
-    router.push("/checkout/success")
-  } catch (error: any) {
-    console.error("❌ Order placement failed:", error)
-    toast({
-      title: "Order Failed",
-      description: error?.message || "Something went wrong",
-      variant: "destructive",
-    })
-  } finally {
-    setIsProcessing(false)
+      toast({
+        title: "✅ Order Placed Successfully!",
+        description: "Your order confirmation has been sent.",
+      })
+
+      router.push("/checkout/success")
+    } catch (error: any) {
+      console.error("❌ Order placement failed:", error)
+      toast({
+        title: "Order Failed",
+        description: error?.message || "Something went wrong",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessing(false)
+    }
   }
-}
+
+  // Show loading state while cart is being loaded
+  if (!Array.isArray(rawItems) && rawItems === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen">
-      
-
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <Link href="/cart" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-4">
@@ -328,7 +362,7 @@ export default function CheckoutPage() {
                 type="submit"
                 size="lg"
                 className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                disabled={isProcessing}
+                disabled={isProcessing || cartItems.length === 0}
               >
                 {isProcessing ? (
                   <>
@@ -354,61 +388,74 @@ export default function CheckoutPage() {
               <CardContent className="space-y-4">
                 {/* Items */}
                 <div className="space-y-4">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="flex items-center space-x-4">
-                      <div className="relative">
-                        <img
-                          src={item.image || "/ep1.jpg"}
-                          alt={item.name}
-                          className="w-16 h-16 object-cover rounded-lg"
-                        />
-                        <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                          {item.quantity}
-                        </Badge>
+                  {cartItems.length > 0 ? (
+                    cartItems.map((item) => (
+                      <div key={`${item.id}-${item.size || 'default'}`} className="flex items-center space-x-4">
+                        <div className="relative">
+                          <img
+                            src={item.image || "/ep1.jpg"}
+                            alt={item.name}
+                            className="w-16 h-16 object-cover rounded-lg"
+                          />
+                          <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                            {item.quantity}
+                          </Badge>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium">{item.name}</h4>
+                          {item.size && (
+                            <p className="text-xs text-muted-foreground">Size: {item.size}</p>
+                          )}
+                          <p className="text-sm text-muted-foreground">${item.price}</p>
+                        </div>
+                        <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium">{item.name}</h4>
-                        <p className="text-sm text-muted-foreground">${item.price}</p>
-                      </div>
-                      <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                    ))
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                      Your cart is empty
                     </div>
-                  ))}
+                  )}
                 </div>
 
-                <Separator />
+                {cartItems.length > 0 && (
+                  <>
+                    <Separator />
 
-                {/* Totals */}
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Shipping</span>
-                    <span>${shipping.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Tax</span>
-                    <span>${tax.toFixed(2)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between text-lg font-semibold">
-                    <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
-                  </div>
-                </div>
+                    {/* Totals */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>Subtotal</span>
+                        <span>${subtotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Shipping</span>
+                        <span>${shipping.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Tax</span>
+                        <span>${tax.toFixed(2)}</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between text-lg font-semibold">
+                        <span>Total</span>
+                        <span>${total.toFixed(2)}</span>
+                      </div>
+                    </div>
 
-                {/* Security Features */}
-                <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                  <div className="flex items-center text-sm">
-                    <Shield className="h-4 w-4 mr-2 text-green-600" />
-                    <span>SSL encrypted checkout</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <Truck className="h-4 w-4 mr-2 text-blue-600" />
-                    <span>Free shipping on orders over $50</span>
-                  </div>
-                </div>
+                    {/* Security Features */}
+                    <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                      <div className="flex items-center text-sm">
+                        <Shield className="h-4 w-4 mr-2 text-green-600" />
+                        <span>SSL encrypted checkout</span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <Truck className="h-4 w-4 mr-2 text-blue-600" />
+                        <span>Free shipping on orders over $50</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
