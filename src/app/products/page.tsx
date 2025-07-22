@@ -16,7 +16,7 @@ import API from "@/lib/api"
 import { useAppDispatch } from "@/store/hooks"
 import { addToCart } from "@/store/slices/cartSlice"
 import { toast } from "react-hot-toast"
-import { Console } from "console"
+
 
 const categories = ["All", "Electronics", "Fashion", "Home", "Audio", "Accessories"]
 const priceRanges = [

@@ -19,11 +19,10 @@ interface ProductWithFavorite extends Product {
 export default function FeaturedProducts() {
 
   const [featuredProducts, setFeaturedProducts] = useState<ProductWithFavorite[]>([]);
-
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
       try {
-        const res = await API.get("products/getFeaturedProducts");
+        const res = await API.get(`products/getFeaturedProducts`);
         setFeaturedProducts(res.data || []);
       } catch (err) {
         console.error("Error fetching products:", err);
