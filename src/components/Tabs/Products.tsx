@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Edit, Trash2, Package, Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import API from "@/lib/api"
 import CreateProduct from "./CreateProduct"
 import EditProduct from "./EditProduct"
+import axios from "axios"
 
 export interface Product {
   _id: string
@@ -24,6 +24,9 @@ export interface Product {
   reviews: []
 }
 
+
+
+
 export default function Products() {
   const { toast } = useToast()
   const [products, setProducts] = useState<Product[]>([])
@@ -36,6 +39,10 @@ export default function Products() {
     fetchProducts()
   }, [])
 
+const adminData = JSON.parse(localStorage.getItem("admin") || "{}");
+const token = adminData.token;
+
+
   // Lock body scroll when any modal is open
   useEffect(() => {
     document.body.style.overflow =
@@ -44,7 +51,11 @@ export default function Products() {
 
   const fetchProducts = async () => {
     try {
-      const res = await API.get("products/getAllProducts")
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/products/getAllProducts`,{
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
       setProducts(res.data || [])
     } catch (err) {
       console.error("Error fetching products:", err)
@@ -60,7 +71,11 @@ export default function Products() {
     if (!confirm(`Are you sure you want to delete "${productName}"?`))
       return
     try {
-      await API.delete(`admin/deleteProduct/${productId}`)
+      await axios.delete(`admin/deleteProduct/${productId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
       await fetchProducts()
       toast({
         title: "Product deleted!",

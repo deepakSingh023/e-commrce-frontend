@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Package, Trash2, AlertCircle } from "lucide-react"
-import API from "@/lib/api"
+import axios from "axios"
 import { Button } from "@/components/ui/button"
 
 export default function Orders() {
@@ -11,6 +11,10 @@ export default function Orders() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const statuses = ["pending", "processing", "shipped", "delivered", "cancelled"]
+
+const adminData = JSON.parse(localStorage.getItem("admin") || "{}");
+const token = adminData.token;
+
   
   // Type for the transformed order data
   type TransformedOrder = {
@@ -38,7 +42,11 @@ export default function Orders() {
       setLoading(true)
       setError(null)
       
-      const res = await API.get("/orders/getAllOrders")
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/getAllOrders`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+      })
       
       // The API returns data directly as an array
       const rawOrders = res.data
@@ -85,7 +93,11 @@ export default function Orders() {
 
   const deleteOrder = async (id: string) => {
     try {
-      await API.delete(`/admin/deleteOrder/${id}`)
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/deleteOrder/${id}`,{
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+      })
       setOrders((prev) => prev.filter((order) => order.id !== id))
     } catch (err: any) {
       console.error("Error deleting order:", err)
@@ -97,7 +109,11 @@ export default function Orders() {
 
   const updateOrderStatus = async (id: string, newStatus: string) => {
     try {
-      await API.patch(`/admin/updateOrderStatus`, { status: newStatus, orderId: id })
+      await axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/updateOrderStatus`, { status: newStatus, orderId: id },{
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+      })
       setOrders((prev) =>
         prev.map((order) =>
           order.id === id ? { ...order, status: newStatus } : order
@@ -162,7 +178,7 @@ export default function Orders() {
                 <Button 
                   onClick={async () => {
                     try {
-                      const res = await API.get("/admin/getAllOrders")
+                      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/getAllOrders`)
                       console.log('Admin endpoint response:', res.data)
                     } catch (err) {
                       console.log('Admin endpoint error:', err)
