@@ -38,14 +38,6 @@ export default function Orders() {
       setLoading(true)
       setError(null)
       
-      // Check if user is authenticated
-      const token = localStorage.getItem('authToken') // Adjust based on your auth implementation
-      if (!token) {
-        setError('Please log in to view orders')
-        setLoading(false)
-        return
-      }
-
       const res = await API.get("/orders/getAllOrders")
       
       // The API returns data directly as an array
