@@ -1,12 +1,21 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useAppDispatch } from "@/store/hooks";
+import { logoutAdmin } from "@/store/slices/adminAuthSlice";
+const router = useRouter();
 
 
 export default function AdminHeader() {
   const dispatch = useAppDispatch();
   
-  // Reload the page
+  const adminLogOut = () => {
+    dispatch(logoutAdmin());
+    router.push("/");
+  };
+
+  const showHomePage = () => {
+    router.push("/");
+  };
  
 
   return (
@@ -18,10 +27,10 @@ export default function AdminHeader() {
           <button className="p-3 border rounded-md" >
             Refresh
           </button>
-          <button className="p-3 border rounded-md" >
+          <button className="p-3 border rounded-md" onClick={showHomePage} >
             View Website
           </button>
-          <button className="p-3 border rounded-md" >
+          <button className="p-3 border rounded-md" onClick={adminLogOut} >
             Log Out
           </button>
         </div>
