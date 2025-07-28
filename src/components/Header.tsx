@@ -106,11 +106,6 @@ export default function Header() {
                 <Link key={action.name} href={action.href}>
                   <Button variant="ghost" size="icon" className="relative hover:bg-muted">
                     <action.icon className="h-5 w-5" />
-                    {action.name && (
-                      <Badge className="absolute -top-2 -right-2 h-5 w-5 text-xs p-0 flex justify-center items-center bg-primary">
-                       
-                      </Badge>
-                    )}
                   </Button>
                 </Link>
               ))}
@@ -220,11 +215,6 @@ export default function Header() {
                           <action.icon className="h-4 w-4" />
                           <span>{action.name}</span>
                         </div>
-                        {action.name && (
-                          <Badge className="h-5 w-5 text-xs p-0 flex justify-center items-center bg-primary">
-                           
-                          </Badge>
-                        )}
                       </Link>
                     ))}
                   </div>
