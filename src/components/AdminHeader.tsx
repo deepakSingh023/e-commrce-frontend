@@ -2,10 +2,12 @@
 import { useRouter } from "next/navigation";
 import { useAppDispatch } from "@/store/hooks";
 import { logoutAdmin } from "@/store/slices/adminAuthSlice";
-const router = useRouter();
+
 
 
 export default function AdminHeader() {
+
+  const router = useRouter();
   const dispatch = useAppDispatch();
   
   const adminLogOut = () => {
