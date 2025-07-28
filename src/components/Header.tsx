@@ -58,7 +58,7 @@ export default function Header() {
 
   const userActions = [
     { name: "Favourites", href: "/favourites", icon: Heart },
-    { name: "Cart", href: "/cart", icon: ShoppingCart, badge: 3 },
+    { name: "Cart", href: "/cart", icon: ShoppingCart },
     { name: "My Orders", href: "/orders", icon: Package },
   ]
 
@@ -106,9 +106,9 @@ export default function Header() {
                 <Link key={action.name} href={action.href}>
                   <Button variant="ghost" size="icon" className="relative hover:bg-muted">
                     <action.icon className="h-5 w-5" />
-                    {action.badge && (
+                    {action.name && (
                       <Badge className="absolute -top-2 -right-2 h-5 w-5 text-xs p-0 flex justify-center items-center bg-primary">
-                        {action.badge}
+                       
                       </Badge>
                     )}
                   </Button>
@@ -220,9 +220,9 @@ export default function Header() {
                           <action.icon className="h-4 w-4" />
                           <span>{action.name}</span>
                         </div>
-                        {action.badge && (
+                        {action.name && (
                           <Badge className="h-5 w-5 text-xs p-0 flex justify-center items-center bg-primary">
-                            {action.badge}
+                           
                           </Badge>
                         )}
                       </Link>
